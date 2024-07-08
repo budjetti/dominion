@@ -1,0 +1,9 @@
+# ignore everything
+*
+
+# except these files
+!.gitignore
+!dominion.cpp
+
+# even in subdirectories
+!*/
