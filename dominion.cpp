@@ -674,10 +674,7 @@ private:
     vector<Card> trash;
 };
 
-void TestStuff(){
+int main(){
     Game g;
     g.Start();
-}
-int main(){
-    TestStuff();
 }
