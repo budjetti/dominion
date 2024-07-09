@@ -168,6 +168,44 @@ public:
         PlayPhase(true);
         EndTurn();
     }
+    string GetName(){
+        return name;
+    }
+    size_t Score(){
+        size_t total = 0;
+        size_t gardens = 0;
+        vector<vector<Card>> deck{hand, discardPile, drawPile, playArea};
+        for(vector<Card> v : deck){
+            for(Card c : v){
+                if(c.data.type != CardType::VICTORY)
+                    continue;
+                switch(c.data.id){
+                    case CardId::ESTATE:
+                        total++;
+                        break;
+                    case CardId::DUCHY:
+                        total += 3;
+                        break;
+                    case CardId::PROVINCE:
+                        total += 6;
+                        break;
+                    case CardId::GARDENS:
+                        gardens++;
+                        break;
+                    default:
+                        cout << "failed to score victory card\n";
+                        break;
+                }
+            }
+        }
+        if(gardens > 0){
+            cout << 5 / 10 << endl;
+            cout << 10 / 10 << endl;
+            cout << 11 / 10 << endl;
+            cout << 99 / 10 << endl;
+        }
+        return total;
+    }
 private:
     vector<Card> hand;
     vector<Card> discardPile;
@@ -643,6 +681,7 @@ public:
 
         // create shop
         size_t victoryCount = players.size() > 2 ? 12 : 8;
+        victoryCount = 1;
         size_t curseCount = players.size() > 1 ? (players.size() - 1) * 10 : 10;
         size_t copperCount = 60 - players.size() * 7;
         // BASIC CARDS
@@ -658,24 +697,56 @@ public:
         AddShopStack(CardId::VILLAGE, 10);
         AddShopStack(CardId::FESTIVAL, 10);
         AddShopStack(CardId::LABORATORY, 10);
-        AddShopStack(CardId::CELLAR, 10);
-        AddShopStack(CardId::CHAPEL, 10);
+        AddShopStack(CardId::CELLAR, 1);
+        AddShopStack(CardId::CHAPEL, 1);
 
         while(PlayRound());
 
         EndGame();
     }
 private:
+    // checks game end conditions
+    // TODO check DURING turn
+    bool GameShouldContinue(){
+        size_t emptyStacks = 0;
+        for(vector<Card> v : shop){
+            if(v.size() == 0)
+                emptyStacks++;
+        }
+
+        if(emptyStacks == 0){
+            // no stacks have depleted
+            return true;
+        } else if(emptyStacks >= 3){
+            // at least 3 shop stacks have depleted
+            return false;
+        }
+
+        for(vector<Card> v : shop){
+            if(v[0].data.id == CardId::PROVINCE){
+                // 1-2 shop stacks have depleted but provinces remain
+                return true;
+            }
+        }
+        // provinces have depleted
+        return false;
+    }
+
     // returns true if game should continue
     bool PlayRound(){
-        // cout << "playing round" << endl;
         for(auto p : players){
             p->TakeTurn(players);
             cout << "turn finished\n";
         }
-        return true;
+        return GameShouldContinue();
     }
-    void EndGame(){}
+    void EndGame(){
+        cout << "Game has ended\n";
+        // TODO sort by score
+        for(Player * p : players){
+            cout << p->GetName() << ": " << p->Score() << "\n";
+        }
+    }
 
     void AddShopStack(CardId id, int count){
         vector<Card> cards;
