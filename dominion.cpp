@@ -379,6 +379,8 @@ private:
         cardEffects[CardId::LABORATORY] = &Player::PlayLaboratory;
         cardEffects[CardId::CELLAR] = &Player::PlayCellar;
         cardEffects[CardId::CHAPEL] = &Player::PlayChapel;
+        cardEffects[CardId::MOAT] = &Player::PlayMoat;
+        cardEffects[CardId::WORKSHOP] = &Player::PlayWorkshop;
     }
     bool BuyCard(string name){
         if(buys <= 0){
@@ -395,9 +397,7 @@ private:
                 }
                 buys--;
                 gold -= shopStack.back().data.cost;
-                // move card from shop to discard
-                discardPile.insert(discardPile.end(), make_move_iterator(shopStack.begin()), make_move_iterator(shopStack.begin() + 1));
-                shopStack.erase(shopStack.begin(), shopStack.begin() + 1);
+                GainCard(name);
                 cout << "Bought " << name << "\n";
                 return true;
             }
@@ -408,6 +408,20 @@ private:
             return BuyCard(retry);
         }
         cout << "No card with unambiguously matcing name found in shop\n";
+        return false;
+    }
+    // Gain a card from shop. Returns true if successful.
+    bool GainCard(string name){
+        for(auto &shopStack : *shop){
+            if(shopStack.size() == 0){
+                continue;
+            }
+            if(StrLower(shopStack.back().data.name) == StrLower(name)){
+                discardPile.insert(discardPile.end(), make_move_iterator(shopStack.begin()), make_move_iterator(shopStack.begin() + 1));
+                shopStack.erase(shopStack.begin(), shopStack.begin() + 1);
+                return true;
+            }
+        }
         return false;
     }
     void PrintShop(){
@@ -554,8 +568,8 @@ private:
                     hand.erase(pos);
                 }
 
+                cout << "Playing " << c.data.name << "...\n";
                 ResolveEffect(c.data.id);
-                cout << "Played " << c.data.name << "\n";
                 return true;
             }
         }
@@ -711,6 +725,35 @@ private:
             }
         }
     }
+    void PlayMoat(){
+        Draw(2);
+    }
+    void PlayWorkshop(){
+        cout << "Gain a card costing up to 4 (eg. gardens, village): ";
+        vector<string> tokens = ResponseToTokens();
+        if(tokens.size() == 0){
+            cout << "Please input a card\n";
+            PlayWorkshop();
+            return;
+        }
+        string name = SubstrToCard(tokens[0], *shop);
+        for(vector<Card> v : *shop){
+            if(StrLower(v.back().data.name) == StrLower(name)){
+                if(v.back().data.cost > 4){
+                    cout << "Too expensive\n";
+                    PlayWorkshop();
+                    return;
+                } else {
+                    break;
+                }
+            }
+        }
+        if(GainCard(name)){
+            cout << "Gained " << name << "\n";
+        } else {
+            cout << "Could not gain " << name << "\n";
+        }
+    }
 };
 
 class Game{
@@ -723,6 +766,7 @@ public:
 
         // create shop
         size_t victoryCount = players.size() > 2 ? 12 : 8;
+        // debug
         victoryCount = 1;
         size_t curseCount = players.size() > 1 ? (players.size() - 1) * 10 : 10;
         size_t copperCount = 60 - players.size() * 7;
@@ -739,9 +783,11 @@ public:
         AddShopStack(CardId::VILLAGE, 10);
         AddShopStack(CardId::FESTIVAL, 10);
         AddShopStack(CardId::LABORATORY, 10);
-        AddShopStack(CardId::CELLAR, 1);
-        AddShopStack(CardId::CHAPEL, 1);
-        AddShopStack(CardId::GARDENS, 1);
+        AddShopStack(CardId::CELLAR, 10);
+        AddShopStack(CardId::CHAPEL, 10);
+        AddShopStack(CardId::GARDENS, 10);
+        AddShopStack(CardId::MOAT, 10);
+        AddShopStack(CardId::WORKSHOP, 10);
 
         while(PlayRound());
 
