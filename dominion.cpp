@@ -138,7 +138,7 @@ public:
 
 class Player{
 public:
-    Player(string name, vector<vector<Card>>* shop, vector<Card>* trash) : name(name), shop(shop), trash(trash), gold(0) {
+    Player(string name, vector<vector<Card>>* shop, vector<Card>* trash) : name(name), shop(shop), trash(trash), gold(0), autoClaim(true) {
         cout << "New player created. Gaining starting cards. \n";
         GainStartingCards();
         PopulateEffects();
@@ -168,6 +168,7 @@ private:
     size_t actions;
     size_t buys;
     map<CardId, void (Player::*)()> cardEffects;
+    bool autoClaim;
 
     bool BasicCommands(vector<string> tokens){
         if(tokens.size() == 0){
@@ -190,6 +191,15 @@ private:
         } else if(tokens[0] == "all" || tokens[0] == "a"){
             PrintAll();
             return true;
+        } else if(tokens[0] == "autoclaim" || tokens[0] == "ac"){
+            // toggle autoclaim. might deserve its own function?
+            if(tokens.size() > 1){
+                autoClaim = (tokens[1] == "on" || tokens[1] == "true");
+            } else {
+                autoClaim = !autoClaim;
+            }
+            cout << "autoclaim is now " << (autoClaim ? "on" : "off") << "\n";
+            return true;
         }
         return false;
     }
@@ -209,8 +219,12 @@ private:
                     PlayCard(tokens[1], CardType::ACTION);
                     continue;
                 } else if (tokens[0] == "buy" || tokens[0] == "b"){
-                    cout << "Can't buy during the action phase\n";
-                    continue;
+                    // cout << "Can't buy during the action phase\n";
+                    if(autoClaim)
+                        ClaimAll();
+                    BuyCard(tokens[1]);
+                    return;
+                    // continue;
                 }
             }
             cout << "Invalid input\n";
@@ -304,7 +318,7 @@ private:
         if(retry != name){
             return BuyCard(retry);
         }
-        cout << "No " << name << " to buy\n";
+        cout << "Card not found in shop\n";
         return false;
     }
     void PrintShop(){
@@ -411,6 +425,7 @@ private:
         Draw(5);
     }
 
+    // this function will break if cards have multiplte types
     bool PlayCard(string name, CardType type){
         for(Card c : hand){
             if(StrLower(c.data.name) == StrLower(name)){
@@ -452,8 +467,17 @@ private:
         if(retry != name){
             return PlayCard(retry, type);
         }
-        cout << "Card not found in hand";
+        cout << "Card not found in hand\n";
         return false;
+    }
+    void ClaimAll(){
+        vector<string> treasures;
+        for(Card c : hand){
+            if(c.data.type == CardType::TREASURE)
+                treasures.push_back(c.data.name);
+        }
+        for(string s : treasures)
+            PlayCard(s, CardType::TREASURE);
     }
     string SubstrToCard(string alias, vector<Card> cards){
         vector<Card> unique;
