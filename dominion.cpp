@@ -138,8 +138,15 @@ public:
 
 class Player{
 public:
-    Player(string name, vector<vector<Card>>* shop, vector<Card>* trash) : name(name), shop(shop), trash(trash), gold(0), autoClaim(true) {
-        cout << "New player created. Gaining starting cards. \n";
+    Player(string name, vector<vector<Card>>* shop, vector<Card>* trash) : 
+        name(name),
+        shop(shop), 
+        trash(trash), 
+        gold(0), 
+        autoClaim(true),
+        debug(false) 
+    {
+        // cout << "New player created. Gaining starting cards. \n";
         GainStartingCards();
         PopulateEffects();
         Draw(5);
@@ -148,9 +155,15 @@ public:
     void TakeTurn(vector<Player*> allPlayers){
         // find a better place for delivering allPlayers?
         players = allPlayers;
-        actions = 99;
-        buys = 99;
-        gold = 99;
+        if(debug){
+            actions = 99;
+            buys = 99;
+            gold = 99;
+        } else {
+            actions = 1;
+            buys = 1;
+            gold = 0;
+        }
         ActionPhase();
         BuyPhase();
         EndTurn();
@@ -169,6 +182,7 @@ private:
     size_t buys;
     map<CardId, void (Player::*)()> cardEffects;
     bool autoClaim;
+    bool debug;
 
     bool BasicCommands(vector<string> tokens){
         if(tokens.size() == 0){
@@ -203,6 +217,7 @@ private:
         }
         return false;
     }
+    // welcome to spaghetti town
     void ActionPhase(){
         while(1){
             PrintStatus();
@@ -210,11 +225,19 @@ private:
             vector<string> tokens = ResponseToTokens();
             if(tokens.size() == 0){
                 continue;
-            } else if(tokens.size() == 1 && (tokens[0] == "end" || tokens[0] == "e")){
-                break;
-            } else if(BasicCommands(tokens)){
+            }
+            if(tokens.size() == 1){
+                if(tokens[0] == "end" || tokens[0] == "e"){
+                    break;
+                } else if(tokens[0] == "claim" || tokens[0] == "c"){
+                    ClaimAll();
+                    return;
+                }
+            }
+            if(BasicCommands(tokens)){
                 continue;
-            } else if (tokens.size() > 1){
+            }
+            if(tokens.size() > 1){
                 if(tokens[0] == "play" || tokens[0] == "p"){
                     PlayCard(tokens[1], CardType::ACTION);
                     continue;
@@ -230,6 +253,7 @@ private:
             cout << "Invalid input\n";
         }
     }
+    // welcome to spaghetti town
     void BuyPhase(){
         while(1){
             PrintStatus();
@@ -237,11 +261,19 @@ private:
             vector<string> tokens = ResponseToTokens();
             if(tokens.size() == 0){
                 continue;
-            } else if(tokens.size() == 1 && (tokens[0] == "end" || tokens[0] == "e")){
-                break;
-            } else if(BasicCommands(tokens)){
+            }
+            if(tokens.size() == 1){
+                if(tokens[0] == "end" || tokens[0] == "e"){
+                    break;
+                } else if(tokens[0] == "claim" || tokens[0] == "c"){
+                    ClaimAll();
+                    continue;
+                }
+            }
+            if(BasicCommands(tokens)){
                 continue;
-            } else if (tokens.size() > 1){
+            }
+            if(tokens.size() > 1){
                 if(tokens[0] == "play" || tokens[0] == "p"){
                     PlayCard(tokens[1], CardType::TREASURE);
                     continue;
@@ -273,12 +305,17 @@ private:
         return tokens;
     }
     void GainStartingCards(){
-        GainCard(CardId::COPPER, 1);
-        GainCard(CardId::SILVER, 1);
-        GainCard(CardId::SMITHY, 1);
-        GainCard(CardId::CELLAR, 1);
-        GainCard(CardId::LABORATORY, 1);
-        GainCard(CardId::CHAPEL, 1);
+        if(debug){
+            GainCard(CardId::COPPER, 1);
+            GainCard(CardId::SILVER, 1);
+            GainCard(CardId::SMITHY, 1);
+            GainCard(CardId::CELLAR, 1);
+            GainCard(CardId::LABORATORY, 1);
+            GainCard(CardId::CHAPEL, 1);
+        } else {
+            GainCard(CardId::COPPER, 7);
+            GainCard(CardId::ESTATE, 3);
+        }
     }
     void PopulateEffects(){
         cardEffects[CardId::COPPER] = &Player::PlayCopper;
@@ -318,7 +355,7 @@ private:
         if(retry != name){
             return BuyCard(retry);
         }
-        cout << "Card not found in shop\n";
+        cout << "No card with unambiguously matcing name found in shop\n";
         return false;
     }
     void PrintShop(){
@@ -467,7 +504,7 @@ private:
         if(retry != name){
             return PlayCard(retry, type);
         }
-        cout << "Card not found in hand\n";
+        cout << "No card with unambiguously matcing name found in hand\n";
         return false;
     }
     void ClaimAll(){
