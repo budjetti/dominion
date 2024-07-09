@@ -844,7 +844,14 @@ private:
 
     }
     void PlayChancellor(){
-
+        gold += 2;
+        cout << "Move " << drawPile.size() << " cards from draw to discard? (y/n): ";
+        string response;
+        cin >> response;
+        if(StrLower(response) == "y"){
+            MoveVectorContents(drawPile, discardPile);
+            cout << "Cards moved.\n";
+        }
     }
     void PlayThief(){
 
