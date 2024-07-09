@@ -218,6 +218,9 @@ public:
                     case CardId::PROVINCE:
                         total += 6;
                         break;
+                    case CardId::CURSE:
+                        total--;
+                        break;
                     case CardId::GARDENS:
                         gardens++;
                         break;
@@ -381,6 +384,21 @@ private:
         cardEffects[CardId::CHAPEL] = &Player::PlayChapel;
         cardEffects[CardId::MOAT] = &Player::PlayMoat;
         cardEffects[CardId::WORKSHOP] = &Player::PlayWorkshop;
+        cardEffects[CardId::MILITIA] = &Player::PlayMilitia;
+        cardEffects[CardId::WITCH] = &Player::PlayWitch;
+        cardEffects[CardId::SPY] = &Player::PlaySpy;
+        cardEffects[CardId::COUNCIL_ROOM] = &Player::PlayCouncilRoom;
+        cardEffects[CardId::ADVENTURER] = &Player::PlayAdventurer;
+        cardEffects[CardId::THIEF] = &Player::PlayThief;
+        cardEffects[CardId::CHANCELLOR] = &Player::PlayChancellor;
+        cardEffects[CardId::REMODEL] = &Player::PlayRemodel;
+        cardEffects[CardId::THRONE_ROOM] = &Player::PlayThroneRoom;
+        cardEffects[CardId::FEAST] = &Player::PlayFeast;
+        cardEffects[CardId::BUREAUCRAT] = &Player::PlayBureaucrat;
+        cardEffects[CardId::MINE] = &Player::PlayMine;
+        cardEffects[CardId::MONEYLENDER] = &Player::PlayMoneylender;
+        cardEffects[CardId::WOODCUTTER] = &Player::PlayWoodcutter;
+        cardEffects[CardId::LIBRARY] = &Player::PlayLibrary;
     }
     bool BuyCard(string name){
         if(buys <= 0){
@@ -753,6 +771,57 @@ private:
         } else {
             cout << "Could not gain " << name << "\n";
         }
+    }
+    void PlayLibrary(){
+
+    }
+    void PlayWoodcutter(){
+        
+    }
+    void PlayMoneylender(){
+        
+    }
+    void PlayMine(){
+
+    }
+    void PlayBureaucrat(){
+
+    }
+    void PlayFeast(){
+
+    }
+    void PlayThroneRoom(){
+
+    }
+    void PlayFestival(){
+
+    }
+    void PlayMarket(){
+
+    }
+    void PlayRemodel(){
+
+    }
+    void PlayChancellor(){
+
+    }
+    void PlayThief(){
+
+    }
+    void PlayAdventurer(){
+
+    }
+    void PlayCouncilRoom(){
+
+    }
+    void PlaySpy(){
+
+    }
+    void PlayWitch(){
+
+    }
+    void PlayMilitia(){
+
     }
 };
 
