@@ -164,8 +164,8 @@ public:
             buys = 1;
             gold = 0;
         }
-        ActionPhase();
-        BuyPhase();
+        PlayPhase(false);
+        PlayPhase(true);
         EndTurn();
     }
 private:
@@ -217,11 +217,10 @@ private:
         }
         return false;
     }
-    // welcome to spaghetti town
-    void ActionPhase(){
+    void PlayPhase(bool isBuyPhase){
         while(1){
             PrintStatus();
-            cout << "[" << name << " - action]: ";
+            cout << "[" << name << " - " << (isBuyPhase ? "buy" : "action") << "]: ";
             vector<string> tokens = ResponseToTokens();
             if(tokens.size() == 0){
                 continue;
@@ -230,8 +229,15 @@ private:
                 if(tokens[0] == "end" || tokens[0] == "e"){
                     break;
                 } else if(tokens[0] == "claim" || tokens[0] == "c"){
+                    if(!isBuyPhase)
+                        cout << "Move to buy phase\n";
                     ClaimAll();
-                    return;
+                    if(isBuyPhase){
+                        continue;
+                    } else{
+                        // move to buy phase
+                        return;
+                    }
                 }
             }
             if(BasicCommands(tokens)){
@@ -239,47 +245,21 @@ private:
             }
             if(tokens.size() > 1){
                 if(tokens[0] == "play" || tokens[0] == "p"){
-                    PlayCard(tokens[1], CardType::ACTION);
+                    PlayCard(tokens[1], isBuyPhase ? CardType::TREASURE : CardType::ACTION);
                     continue;
                 } else if (tokens[0] == "buy" || tokens[0] == "b"){
-                    // cout << "Can't buy during the action phase\n";
+                    if(!isBuyPhase)
+                        cout << "Move to buy phase\n";
                     if(autoClaim)
                         ClaimAll();
                     BuyCard(tokens[1]);
-                    return;
-                    // continue;
-                }
-            }
-            cout << "Invalid input\n";
-        }
-    }
-    // welcome to spaghetti town
-    void BuyPhase(){
-        while(1){
-            PrintStatus();
-            cout << "[" << name << " - buy]: ";
-            vector<string> tokens = ResponseToTokens();
-            if(tokens.size() == 0){
-                continue;
-            }
-            if(tokens.size() == 1){
-                if(tokens[0] == "end" || tokens[0] == "e"){
-                    break;
-                } else if(tokens[0] == "claim" || tokens[0] == "c"){
-                    ClaimAll();
-                    continue;
-                }
-            }
-            if(BasicCommands(tokens)){
-                continue;
-            }
-            if(tokens.size() > 1){
-                if(tokens[0] == "play" || tokens[0] == "p"){
-                    PlayCard(tokens[1], CardType::TREASURE);
-                    continue;
-                } else if (tokens[0] == "buy" || tokens[0] == "b"){
-                    BuyCard(tokens[1]);
-                    continue;
+
+                    if(isBuyPhase){
+                        continue;
+                    } else{
+                        // move to buy phase
+                        return;
+                    }
                 }
             }
             cout << "Invalid input\n";
