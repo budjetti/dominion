@@ -193,7 +193,6 @@ public:
         }
         // only do buy phase if player did not end turn during the action phase
         if(PlayPhase(false)){
-            cout << "end not called\n";
             PlayPhase(true);
         }
         EndTurn();
@@ -229,10 +228,8 @@ public:
             }
         }
         if(gardens > 0){
-            cout << 5 / 10 << endl;
-            cout << 10 / 10 << endl;
-            cout << 11 / 10 << endl;
-            cout << 99 / 10 << endl;
+            size_t count = hand.size() + discardPile.size() + drawPile.size() + playArea.size();
+            total += (count / 10) * gardens;
         }
         return total;
     }
@@ -732,6 +729,7 @@ public:
         AddShopStack(CardId::LABORATORY, 10);
         AddShopStack(CardId::CELLAR, 1);
         AddShopStack(CardId::CHAPEL, 1);
+        AddShopStack(CardId::GARDENS, 1);
 
         while(PlayRound());
 
