@@ -260,7 +260,7 @@ private:
             PrintShop();
             return true;
         } else if(tokens[0] == "status" || tokens[0] == "st"){
-            PrintStatus();
+            PrintStatus(true);
             return true;
         } else if(tokens[0] == "discard" || tokens[0] == "di"){
             PrintDiscard();
@@ -293,7 +293,7 @@ private:
     // Handles player's action/buy phase. Returns true if turn should continue or false if player wants to end their turn.
     bool PlayPhase(bool isBuyPhase){
         while(GameShouldContinue(*shop)){
-            PrintStatus();
+            PrintStatus(true);
             cout << "[" << name << " - " << (isBuyPhase ? "buy" : "action") << "]: ";
             vector<string> tokens = ResponseToTokens();
             if(tokens.size() == 0){
@@ -486,24 +486,35 @@ private:
         cout << "\n";
     }
     void PrintAll(){
-        PrintStatus();
+        PrintStatus(false);
         PrintPlayArea();
+        PrintDrawPile();
         PrintDiscard();
     }
-    void PrintStatus(){
-        cout << "Gold: " << gold << " - Buys: " << buys << " - Actions: " << actions << " - ";
+    void PrintStatus(bool includeHand){
+        cout << "Gold: " << gold << " - Buys: " << buys << " - Actions: " << actions << (includeHand ? " - " : "\n");
         PrintHand();
     }
     void PrintHand(){
-        cout << "Hand: ";
+        cout << "Hand (" << hand.size() << "): ";
         PrintCardVector(hand);
     }
+    void PrintDrawPile(){
+        cout << "Draw (" << drawPile.size() << "): ";
+        for(int i = 0; i < drawPile.size(); i++){
+            cout << "?";
+            if(i < drawPile.size() - 1){
+                cout << ", ";
+            }
+        }
+        cout << "\n";
+    }
     void PrintPlayArea(){
-        cout << "Play Area: ";
+        cout << "Play (" << playArea.size() << "): ";
         PrintCardVector(playArea);
     }
     void PrintDiscard(){
-        cout << "Discard: ";
+        cout << "Discard (" << discardPile.size() << "): ";
         PrintCardVector(discardPile);
     }
     // this function works, but it's written in a goofy way
@@ -547,13 +558,13 @@ private:
         return true;
     }
     void EndTurn(){
-        // move entirety of hand and play area into discard
-        discardPile.insert(discardPile.end(), make_move_iterator(hand.begin()), make_move_iterator(hand.end()));
-        hand.erase(hand.begin(), hand.end());
-        discardPile.insert(discardPile.end(), make_move_iterator(playArea.begin()), make_move_iterator(playArea.end()));
-        playArea.erase(playArea.begin(), playArea.end());
-
+        MoveVectorContents(hand, discardPile);
+        MoveVectorContents(playArea, discardPile);
         Draw(5);
+    }
+    void MoveVectorContents(vector<Card> & oldVec, vector<Card> & newVec){
+        newVec.insert(newVec.end(), make_move_iterator(oldVec.begin()), make_move_iterator(oldVec.end()));
+        oldVec.erase(oldVec.begin(), oldVec.end());
     }
 
     // this function will break if cards have multiplte types
@@ -775,7 +786,29 @@ private:
         }
     }
     void PlayLibrary(){
-
+        vector<Card> aside;
+        while(hand.size() < 7 && (drawPile.size() > 0 || discardPile.size() > 0)){
+            if(drawPile.size() == 0){
+                ShuffleDiscardIntoDraw();
+            }
+            // TODO check if this should be front or back
+            Card drawTop = drawPile.back();
+            if(drawTop.data.type == CardType::ACTION){
+                cout << "Set aside " << drawTop.data.name << "? (y/n): ";
+                string answer;
+                cin >> answer;
+                if(StrLower(answer) == "y"){
+                    vector<Card>::iterator pos = drawPile.end();
+                    Card copy(drawTop.data.id);
+                    aside.push_back(copy);
+                    drawPile.erase(pos);
+                    continue;
+                }
+            }
+            // if not an action or action was not set aside
+            Draw(1);
+        }
+        MoveVectorContents(aside, discardPile);
     }
     void PlayWoodcutter(){
         buys++;
