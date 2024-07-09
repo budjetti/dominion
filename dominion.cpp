@@ -776,7 +776,8 @@ private:
 
     }
     void PlayWoodcutter(){
-        
+        buys++;
+        gold += 2;
     }
     void PlayMoneylender(){
         
@@ -791,9 +792,6 @@ private:
 
     }
     void PlayThroneRoom(){
-
-    }
-    void PlayFestival(){
 
     }
     void PlayMarket(){
@@ -857,6 +855,7 @@ public:
         AddShopStack(CardId::GARDENS, 10);
         AddShopStack(CardId::MOAT, 10);
         AddShopStack(CardId::WORKSHOP, 10);
+        AddShopStack(CardId::WOODCUTTER, 10);
 
         while(PlayRound());
 
