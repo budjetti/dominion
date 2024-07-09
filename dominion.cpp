@@ -105,8 +105,9 @@ public:
         cards[CardId::REMODEL] = CardData(CardId::REMODEL, CardType::ACTION, "Remodel", 4);
         cards[CardId::SMITHY] = CardData(CardId::SMITHY, CardType::ACTION, "Smithy", 4);
         cards[CardId::THRONE_ROOM] = CardData(CardId::THRONE_ROOM, CardType::ACTION, "Throne Room", 4);
-        cards[CardId::COUNCIL_ROOM] = CardData(CardId::COUNCIL_ROOM, CardType::ACTION, "Council Room", 5);
         cards[CardId::FESTIVAL] = CardData(CardId::FESTIVAL, CardType::ACTION, "Festival", 5);
+        cards[CardId::COUNCIL_ROOM] = CardData(CardId::COUNCIL_ROOM, CardType::ACTION, "Council Room", 5);
+        cards[CardId::MARKET] = CardData(CardId::MARKET, CardType::ACTION, "Market", 5);
         cards[CardId::LABORATORY] = CardData(CardId::LABORATORY, CardType::ACTION, "Laboratory", 5);
         cards[CardId::LIBRARY] = CardData(CardId::LIBRARY, CardType::ACTION, "Library", 5);
         cards[CardId::MINE] = CardData(CardId::MINE, CardType::ACTION, "Mine", 5);
@@ -394,6 +395,7 @@ private:
         cardEffects[CardId::REMODEL] = &Player::PlayRemodel;
         cardEffects[CardId::THRONE_ROOM] = &Player::PlayThroneRoom;
         cardEffects[CardId::FEAST] = &Player::PlayFeast;
+        cardEffects[CardId::MARKET] = &Player::PlayMarket;
         cardEffects[CardId::BUREAUCRAT] = &Player::PlayBureaucrat;
         cardEffects[CardId::MINE] = &Player::PlayMine;
         cardEffects[CardId::MONEYLENDER] = &Player::PlayMoneylender;
@@ -795,7 +797,10 @@ private:
 
     }
     void PlayMarket(){
-
+        Draw(1);
+        actions++;
+        buys++;
+        gold++;
     }
     void PlayRemodel(){
 
@@ -856,6 +861,7 @@ public:
         AddShopStack(CardId::MOAT, 10);
         AddShopStack(CardId::WORKSHOP, 10);
         AddShopStack(CardId::WOODCUTTER, 10);
+        AddShopStack(CardId::MARKET, 10);
 
         while(PlayRound());
 
