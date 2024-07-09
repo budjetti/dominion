@@ -411,13 +411,21 @@ private:
         return false;
     }
     void PrintShop(){
+        CardType lastType = CardType::TREASURE;
+        cout << "---------- SHOP ----------\n";
         for(auto shopStack : *shop){
             if(shopStack.size() == 0){
-                cout << "Empty stack\n";
-                continue;
+                cout << "Empty\n";
+            } else {
+                CardData data = shopStack.back().data;
+                if(lastType != CardType::ACTION && data.type != lastType){
+                    cout << "\n";
+                    lastType = data.type;
+                }
+                cout << shopStack.size() << "x " << data.name << " (" << data.cost << ")\n";
             }
-            cout << shopStack.back().data.name << " (" << shopStack.size() << ")\n";
         }
+        cout << "--------------------------\n";
     }
     void ResolveEffect(CardId effect){
         if(cardEffects[effect]){
