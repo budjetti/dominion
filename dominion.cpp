@@ -550,22 +550,38 @@ private:
     }
     void PlayCellar(){
         actions++;
-        cout << "Discard (eg. estate estate copper): ";
+        cout << "Discard (eg. estate estate copper / e e co / all): ";
         vector<string> tokens = ResponseToTokens();
         size_t discardedCount = 0;
-        for(string name : tokens){
-            for(Card & card : hand){
-                if(StrLower(card.data.name) == StrLower(name)){
-                    Discard(card.data.id);
-                    discardedCount++;
+        if(tokens[0] == "all"){
+            // doing a for loop here seems to not discard the last card...
+            while(hand.size() > 0){
+                Discard(hand[0].data.id);
+                discardedCount++;
+            }
+        } else {
+            for(string name : tokens){
+                name = SubstrToCard(name, hand);
+                for(Card & card : hand){
+                    if(StrLower(card.data.name) == StrLower(name)){
+                        Discard(card.data.id);
+                        discardedCount++;
+                    }
                 }
             }
         }
         Draw(discardedCount);
     }
     void PlayChapel(){
-        cout << "Trash (eg. estate estate copper): ";
+        cout << "Trash (eg. estate estate copper / e e co / all): ";
         vector<string> tokens = ResponseToTokens();
+        if(tokens[0] == "all"){
+            // doing a for loop here seems to not trash the last card...
+            while(hand.size() > 0){
+                Trash(hand[0].data.id);
+            }
+            return;
+        }
         for(string name : tokens){
             for(Card & card : hand){
                 if(StrLower(card.data.name) == StrLower(name)){
