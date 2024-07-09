@@ -258,7 +258,7 @@ private:
         } else if(tokens[0] == "status" || tokens[0] == "st"){
             PrintStatus();
             return true;
-        } else if(tokens[0] == "discard" || tokens[0] == "d"){
+        } else if(tokens[0] == "discard" || tokens[0] == "di"){
             PrintDiscard();
             return true;
         } else if(tokens[0] == "hand" || tokens[0] == "h"){
@@ -267,20 +267,24 @@ private:
         } else if(tokens[0] == "played" || tokens[0] == "pd"){
             PrintPlayArea();
             return true;
-        } else if(tokens[0] == "all" || tokens[0] == "a"){
+        } else if(tokens[0] == "deck" || tokens[0] == "d"){
             PrintAll();
             return true;
         } else if(tokens[0] == "autoclaim" || tokens[0] == "ac"){
-            // toggle autoclaim. might deserve its own function?
-            if(tokens.size() > 1){
-                autoClaim = (tokens[1] == "on" || tokens[1] == "true");
-            } else {
-                autoClaim = !autoClaim;
-            }
-            cout << "autoclaim is now " << (autoClaim ? "on" : "off") << "\n";
+            ToggleAutoClaim(tokens.size() > 1 ? tokens[1] : "");
             return true;
         }
         return false;
+    }
+    void ToggleAutoClaim(string arg){
+        if(arg == "on" || arg == "true"){
+            autoClaim = true;
+        } else if (arg == "off" || arg == "false"){
+            autoClaim = false;
+        } else {
+            autoClaim = !autoClaim;
+        }
+        cout << "autoclaim is now " << (autoClaim ? "on" : "off") << "\n";
     }
     // Handles player's action/buy phase. Returns true if turn should continue or false if player wants to end their turn.
     bool PlayPhase(bool isBuyPhase){
