@@ -138,7 +138,7 @@ public:
 
 class Player{
 public:
-    Player(string name, vector<vector<Card>>* shop, vector<Card> * trash) : name(name), shop(shop), trash(trash), gold(0) {
+    Player(string name, vector<vector<Card>>* shop, vector<Card>* trash) : name(name), shop(shop), trash(trash), gold(0) {
         cout << "New player created. Gaining starting cards. \n";
         GainStartingCards();
         PopulateEffects();
@@ -299,6 +299,11 @@ private:
                 return true;
             }
         }
+        // card not found in shop. maybe name was a substring?
+        string retry = SubstrToCard(name, *shop);
+        if(retry != name){
+            return BuyCard(retry);
+        }
         cout << "No " << name << " to buy\n";
         return false;
     }
@@ -442,8 +447,61 @@ private:
                 return true;
             }
         }
-        cout << name << " is not a card in hand\n";
+        // card not found in hand. maybe it was a substring?
+        string retry = SubstrToCard(name, hand);
+        if(retry != name){
+            return PlayCard(retry, type);
+        }
+        cout << "Card not found in hand";
         return false;
+    }
+    string SubstrToCard(string alias, vector<Card> cards){
+        vector<Card> unique;
+        for(Card c : cards){
+            bool isCopy = false;
+            for(Card u : unique){
+                if(u == c){
+                    isCopy = true;
+                    break;
+                }
+            }
+            if(!isCopy){
+                // is this copying necessary?
+                Card copy = c;
+                unique.push_back(copy);
+            }
+        }
+        if(unique.size() == 0){
+            // no matching results
+            return "";
+        }
+        for(int i = 0; i < alias.size(); i++){
+            vector<Card> matchingUnique = unique;
+            for(Card c : unique){
+                if(tolower(c.data.name[i]) != tolower(alias[i])){
+                    vector<Card>::iterator pos = find(matchingUnique.begin(), matchingUnique.end(), c);
+                    if(pos != matchingUnique.end())
+                        matchingUnique.erase(pos);
+                }
+            }
+            unique = matchingUnique;
+            if(unique.size() == 1)
+                // excactly one mathing result
+                return unique[0].data.name;
+        }
+        // multiplte matching results
+        return "";
+    }
+    // override meant specifically for shop
+    string SubstrToCard(string alias, vector<vector<Card>> cardStacks){
+        vector<Card> topCards;
+        for(vector<Card> s : cardStacks){
+            if(s.size() == 0)
+                continue;
+            Card copy = s[0];
+            topCards.push_back(copy);
+        }
+        return SubstrToCard(alias, topCards);
     }
 
     void ShuffleDiscardIntoDraw(){
