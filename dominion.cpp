@@ -782,7 +782,12 @@ private:
         gold += 2;
     }
     void PlayMoneylender(){
-        
+        if(Trash(CardId::COPPER)){
+            cout << "Trashed Copper for 3 gold\n";
+            gold += 3;
+        } else {
+            cout << "Failed to trash Copper\n";
+        }
     }
     void PlayMine(){
 
@@ -862,6 +867,7 @@ public:
         AddShopStack(CardId::WORKSHOP, 10);
         AddShopStack(CardId::WOODCUTTER, 10);
         AddShopStack(CardId::MARKET, 10);
+        AddShopStack(CardId::MONEYLENDER, 10);
 
         while(PlayRound());
 
