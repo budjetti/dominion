@@ -172,22 +172,22 @@ private:
     bool BasicCommands(vector<string> tokens){
         if(tokens.size() == 0){
             return false;
-        } else if(tokens[0] == "shop"){
+        } else if(tokens[0] == "shop" || tokens[0] == "s"){
             PrintShop();
             return true;
-        } else if(tokens[0] == "status"){
+        } else if(tokens[0] == "status" || tokens[0] == "st"){
             PrintStatus();
             return true;
-        } else if(tokens[0] == "discard"){
+        } else if(tokens[0] == "discard" || tokens[0] == "d"){
             PrintDiscard();
             return true;
-        } else if(tokens[0] == "hand"){
+        } else if(tokens[0] == "hand" || tokens[0] == "h"){
             PrintHand();
             return true;
-        } else if(tokens[0] == "played"){
+        } else if(tokens[0] == "played" || tokens[0] == "pd"){
             PrintPlayArea();
             return true;
-        } else if(tokens[0] == "all"){
+        } else if(tokens[0] == "all" || tokens[0] == "a"){
             PrintAll();
             return true;
         }
@@ -200,15 +200,15 @@ private:
             vector<string> tokens = ResponseToTokens();
             if(tokens.size() == 0){
                 continue;
-            } else if(tokens.size() == 1 && tokens[0] == "end"){
+            } else if(tokens.size() == 1 && (tokens[0] == "end" || tokens[0] == "e")){
                 break;
             } else if(BasicCommands(tokens)){
                 continue;
             } else if (tokens.size() > 1){
-                if(tokens[0] == "play"){
+                if(tokens[0] == "play" || tokens[0] == "p"){
                     PlayCard(tokens[1], CardType::ACTION);
                     continue;
-                } else if (tokens[0] == "buy"){
+                } else if (tokens[0] == "buy" || tokens[0] == "b"){
                     cout << "Can't buy during the action phase\n";
                     continue;
                 }
@@ -223,15 +223,15 @@ private:
             vector<string> tokens = ResponseToTokens();
             if(tokens.size() == 0){
                 continue;
-            } else if(tokens.size() == 1 && tokens[0] == "end"){
+            } else if(tokens.size() == 1 && (tokens[0] == "end" || tokens[0] == "e")){
                 break;
             } else if(BasicCommands(tokens)){
                 continue;
             } else if (tokens.size() > 1){
-                if(tokens[0] == "play"){
+                if(tokens[0] == "play" || tokens[0] == "p"){
                     PlayCard(tokens[1], CardType::TREASURE);
                     continue;
-                } else if (tokens[0] == "buy"){
+                } else if (tokens[0] == "buy" || tokens[0] == "b"){
                     BuyCard(tokens[1]);
                     continue;
                 }
