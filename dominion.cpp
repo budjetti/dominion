@@ -136,6 +136,33 @@ public:
     CardData data;
 };
 
+static bool GameShouldContinue(vector<vector<Card>> & shop){
+    size_t emptyStacks = 0;
+    for(vector<Card> v : shop){
+        if(v.size() == 0)
+            emptyStacks++;
+    }
+
+    if(emptyStacks == 0){
+        // no stacks have depleted
+        return true;
+    } else if(emptyStacks >= 3){
+        // at least 3 shop stacks have depleted
+        return false;
+    }
+
+    for(vector<Card> v : shop){
+        if(v.size() == 0)
+            continue;
+        if(v[0].data.id == CardId::PROVINCE){
+            // 1-2 shop stacks have depleted but provinces remain
+            return true;
+        }
+    }
+    // provinces have depleted
+    return false;
+}
+
 class Player{
 public:
     Player(string name, vector<vector<Card>>* shop, vector<Card>* trash) : 
@@ -144,7 +171,7 @@ public:
         trash(trash), 
         gold(0), 
         autoClaim(true),
-        debug(false) 
+        debug(true) 
     {
         // cout << "New player created. Gaining starting cards. \n";
         GainStartingCards();
@@ -164,8 +191,11 @@ public:
             buys = 1;
             gold = 0;
         }
-        PlayPhase(false);
-        PlayPhase(true);
+        // only do buy phase if player did not end turn during the action phase
+        if(PlayPhase(false)){
+            cout << "end not called\n";
+            PlayPhase(true);
+        }
         EndTurn();
     }
     string GetName(){
@@ -255,8 +285,9 @@ private:
         }
         return false;
     }
-    void PlayPhase(bool isBuyPhase){
-        while(1){
+    // Handles player's action/buy phase. Returns true if turn should continue or false if player wants to end their turn.
+    bool PlayPhase(bool isBuyPhase){
+        while(GameShouldContinue(*shop)){
             PrintStatus();
             cout << "[" << name << " - " << (isBuyPhase ? "buy" : "action") << "]: ";
             vector<string> tokens = ResponseToTokens();
@@ -265,7 +296,7 @@ private:
             }
             if(tokens.size() == 1){
                 if(tokens[0] == "end" || tokens[0] == "e"){
-                    break;
+                    return false;
                 } else if(tokens[0] == "claim" || tokens[0] == "c"){
                     if(!isBuyPhase)
                         cout << "Move to buy phase\n";
@@ -274,7 +305,7 @@ private:
                         continue;
                     } else{
                         // move to buy phase
-                        return;
+                        return true;
                     }
                 }
             }
@@ -291,17 +322,19 @@ private:
                     if(autoClaim)
                         ClaimAll();
                     BuyCard(tokens[1]);
+                    // check for game end
 
                     if(isBuyPhase){
                         continue;
                     } else{
                         // move to buy phase
-                        return;
+                        return true;
                     }
                 }
             }
             cout << "Invalid input\n";
         }
+        return true;
     }
     string StrLower(string original){
         transform(original.begin(), original.end(), original.begin(), [](unsigned char c){return tolower(c);});
@@ -705,40 +738,13 @@ public:
         EndGame();
     }
 private:
-    // checks game end conditions
-    // TODO check DURING turn
-    bool GameShouldContinue(){
-        size_t emptyStacks = 0;
-        for(vector<Card> v : shop){
-            if(v.size() == 0)
-                emptyStacks++;
-        }
-
-        if(emptyStacks == 0){
-            // no stacks have depleted
-            return true;
-        } else if(emptyStacks >= 3){
-            // at least 3 shop stacks have depleted
-            return false;
-        }
-
-        for(vector<Card> v : shop){
-            if(v[0].data.id == CardId::PROVINCE){
-                // 1-2 shop stacks have depleted but provinces remain
-                return true;
-            }
-        }
-        // provinces have depleted
-        return false;
-    }
-
     // returns true if game should continue
     bool PlayRound(){
         for(auto p : players){
             p->TakeTurn(players);
-            cout << "turn finished\n";
+            cout << "---------- Turn ended ----------\n";
         }
-        return GameShouldContinue();
+        return GameShouldContinue(shop);
     }
     void EndGame(){
         cout << "Game has ended\n";
