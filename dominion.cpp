@@ -868,6 +868,19 @@ public:
         AddShopStack(CardId::WOODCUTTER, 10);
         AddShopStack(CardId::MARKET, 10);
         AddShopStack(CardId::MONEYLENDER, 10);
+        AddShopStack(CardId::MINE, 10);
+        AddShopStack(CardId::BUREAUCRAT, 10);
+        AddShopStack(CardId::FEAST, 10);
+        AddShopStack(CardId::THRONE_ROOM, 10);
+        AddShopStack(CardId::REMODEL, 10);
+        AddShopStack(CardId::CHANCELLOR, 10);
+        AddShopStack(CardId::LIBRARY, 10);
+        AddShopStack(CardId::THIEF, 10);
+        AddShopStack(CardId::ADVENTURER, 10);
+        AddShopStack(CardId::COUNCIL_ROOM, 10);
+        AddShopStack(CardId::SPY, 10);
+        AddShopStack(CardId::WITCH, 10);
+        AddShopStack(CardId::MILITIA, 10);
 
         while(PlayRound());
 
