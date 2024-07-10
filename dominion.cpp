@@ -1,3 +1,18 @@
+/*
+FOSS command line adaptation of Dominion (2008) written in pure c++
+
+This is a hobby project. I am not affiliated with Rio Grande Games and I do not intend to
+make money with this project.
+
+Yes, I am mentally deranged, have brain rot and use phrases like "goober", "amogus" and "skibidi" in everyday conversation.
+
+Dominion Wiki
+https://wiki.dominionstrategy.com/index.php/Dominion_(Base_Set)
+
+Repo: github.com/budjetti/dominion
+Author: budjetti
+*/
+
 #include <iostream>
 #include <stdlib.h>
 #include <string>
@@ -9,8 +24,13 @@
 #include <sstream>
 #include <cctype>
 
+// Controversial line of code ahead
 using namespace std;
 
+/*
+List of all card ID's. Used alongside CardData.name to identify cards. Player uses CardId's to determine which
+card effect to resolve when playing a card.
+*/
 enum class CardId{
     // TREASURE
     COPPER,
@@ -60,6 +80,10 @@ enum class CardId{
     // OTHER
     NO_ID,
 };
+
+/*
+List of all card types. Useful in certain operations.
+*/
 enum class CardType{
     ACTION,
     TREASURE,
@@ -67,6 +91,11 @@ enum class CardType{
     CURSE,
     NO_TYPE,
 };
+
+/*
+Contains everything that a player needs to know about a card: id, type, name and cost. CardData does not
+contain instructions on how to resolve the cards effect. That is handled by the player based on CardData.id.
+*/
 class CardData{
 public:
     CardData(CardId _id, CardType _type, string _name, size_t _cost) : id(_id), type(_type), name(_name), cost(_cost){}
@@ -76,6 +105,10 @@ public:
     string name;
     size_t cost;
 };
+
+/*
+Initializes CardData for each card.
+*/
 class CardSet{
 public:
     map<CardId, CardData> cards;
@@ -124,9 +157,14 @@ public:
         // TODO include 2nd edition?
     }
 };
+
 // !
+// TODO find a better place for this line?
 static CardSet defaultCardSet;
 
+/*
+A card, containing data. Supports == operator.
+*/
 class Card{
 public:
     Card(CardId id) : data(defaultCardSet.cards[id]){} 
@@ -137,6 +175,9 @@ public:
     CardData data;
 };
 
+/*
+Checks game end conditions and returns false if they have been met.
+*/
 static bool GameShouldContinue(vector<vector<Card>> & shop){
     size_t emptyStacks = 0;
     for(vector<Card> v : shop){
@@ -164,6 +205,9 @@ static bool GameShouldContinue(vector<vector<Card>> & shop){
     return false;
 }
 
+/*
+Responsible for most actions in the game, like taking turns and playing cards.
+*/
 class Player{
 public:
     Player(string name, vector<vector<Card>>* shop, vector<Card>* trash) : 
@@ -179,7 +223,11 @@ public:
         Draw(5);
     }
     
-    void TakeTurn(vector<Player*> allPlayers){
+    /*
+    Resolve action, buy and end phases.
+    TODO deliver allPlayers somewhere else
+    */
+    void TakeTurn(vector<Player>* allPlayers){
         // find a better place for delivering allPlayers?
         players = allPlayers;
         if(debug){
@@ -197,9 +245,17 @@ public:
         }
         EndTurn();
     }
+
+    /*
+    For people who are bad at names.
+    */
     string GetName(){
         return name;
     }
+
+    /*
+    Tallies victory points.
+    */
     size_t Score(){
         size_t total = 0;
         size_t gardens = 0;
@@ -237,7 +293,7 @@ public:
         return total;
     }
 private:
-    // ------------------------------------------------ PRIVATE VARIABLES -------------------------------------------------------
+    // ------------------------------------------------ MEMBER VARIABLES -------------------------------------------------------
 
     vector<Card> hand;
     vector<Card> discardPile;
@@ -245,7 +301,7 @@ private:
     vector<Card> playArea;
     vector<vector<Card>>* shop;
     vector<Card>* trash;
-    vector<Player*> players;
+    vector<Player>* players;
     string name;
     size_t gold;
     size_t actions;
@@ -256,6 +312,10 @@ private:
     
     // ------------------------------------------------ STRING -------------------------------------------------------
 
+    /*
+    Given a substring and a vector<Card>, finds card in said vector whose name most
+    resembles substring, and returns the card's name.
+    */
     string SubstrToCard(string alias, vector<Card> cards){
         vector<Card> unique;
         for(Card c : cards){
@@ -293,7 +353,10 @@ private:
         // multiplte matching results
         return "";
     }
-    // override meant specifically for shop
+    /*
+    Given a substring and a vector<vector<Card>> (shop), finds card in shop whose name most
+    resembles substring, and returns the card's name.
+    */
     string SubstrToCard(string alias, vector<vector<Card>> cardStacks){
         vector<Card> topCards;
         for(vector<Card> s : cardStacks){
@@ -304,15 +367,27 @@ private:
         }
         return SubstrToCard(alias, topCards);
     }
+
+    /*
+    SRY CAPS
+    */
     string StrLower(string original){
         transform(original.begin(), original.end(), original.begin(), [](unsigned char c){return tolower(c);});
         return original;
     }
+
+    /*
+    Gets input with cin, takes words from input, lowercases them, and puts them in a vector.
+    */
     vector<string> ResponseToTokens(){
         string response;
         getline(cin, response);
         return TokenizeString(response);
     }
+
+    /*
+    Takes words from string, lowercases them, and puts them in a vector.
+    */
     vector<string> TokenizeString(string original){
         vector<string> tokens;
         string lower = StrLower(original);
@@ -326,22 +401,30 @@ private:
 
     // ------------------------------------------------ SETUP -------------------------------------------------------
 
+    /*
+    Gain 7 Copper and 3 Estates, or something else if debug mode is on.
+    */
     void GainStartingCards(){
+        // TODO make sure these cards are not taken from shop, or at least account for it
         if(debug){
-            GainCard(CardId::COPPER, 1);
-            GainCard(CardId::SILVER, 1);
-            GainCard(CardId::SMITHY, 1);
-            GainCard(CardId::CELLAR, 1);
-            GainCard(CardId::LABORATORY, 1);
-            GainCard(CardId::CHAPEL, 1);
-            GainCard(CardId::REMODEL, 1);
-            GainCard(CardId::WORKSHOP, 1);
-            GainCard(CardId::LIBRARY, 1);
+            CreateAndGainCard(CardId::COPPER, 1);
+            CreateAndGainCard(CardId::SILVER, 1);
+            CreateAndGainCard(CardId::SMITHY, 1);
+            CreateAndGainCard(CardId::CELLAR, 1);
+            CreateAndGainCard(CardId::LABORATORY, 1);
+            CreateAndGainCard(CardId::CHAPEL, 1);
+            CreateAndGainCard(CardId::REMODEL, 1);
+            CreateAndGainCard(CardId::WORKSHOP, 1);
+            CreateAndGainCard(CardId::LIBRARY, 1);
         } else {
-            GainCard(CardId::COPPER, 7);
-            GainCard(CardId::ESTATE, 3);
+            CreateAndGainCard(CardId::COPPER, 7);
+            CreateAndGainCard(CardId::ESTATE, 3);
         }
     }
+
+    /*
+    Makes sure CardId's are hooked to their respective effects.
+    */
     void PopulateEffects(){
         cardEffects[CardId::COPPER] = &Player::PlayCopper;
         cardEffects[CardId::SILVER] = &Player::PlaySilver;
@@ -374,6 +457,9 @@ private:
 
     // ------------------------------------------------ BASIC ACTIONS -------------------------------------------------------
 
+    /*
+    Finds cards by name OR substring and buys it.
+    */
     bool BuyCard(string name){
         if(buys <= 0){
             cout << "No buys remaining\n";
@@ -402,7 +488,10 @@ private:
         cout << "No card with unambiguously matcing name found in shop\n";
         return false;
     }
-    // Gain a card from shop. Returns true if successful.
+
+    /*
+    Retreive card from shop.
+    */
     bool GainCard(string name){
         for(auto &shopStack : *shop){
             if(shopStack.size() == 0){
@@ -416,6 +505,20 @@ private:
         }
         return false;
     }
+
+    /*
+    Spawn a card into discard out of thin air.
+    */
+    void CreateAndGainCard(CardId id, int count){
+        for(size_t i = 0; i < count; i++){
+            Card card(id);
+            discardPile.push_back(card);
+        }
+    }
+
+    /*
+    Executes on-play effects of a card by its id.
+    */
     void ResolveEffect(CardId effect){
         if(cardEffects[effect]){
             // I love c++
@@ -424,15 +527,10 @@ private:
             cout << "Play function not found\n";
         }
     }
-    // TODO card should be gained from shop, instead of being materialized into existence
-    void GainCard(CardId id, int count){
-        for(size_t i = 0; i < count; i++){
-            Card card(id);
-            discardPile.push_back(card);
-            // cout << "added card " <<  discardPile.back().data.name << " to discard\n";
-        }
-    }
-    // this function works, but it's written in a goofy way
+    
+    /*
+    Moves a (random) card with a matching id from one vector to another.
+    */
     bool MoveCard(CardId id, vector<Card> & oldVec, vector<Card> & newVec){
         for(Card c : oldVec){
             if(c.data.id == id){
@@ -445,21 +543,47 @@ private:
         }
         return false;
     }
+
+    /*
+    Moves a (random) card with a matching id from hand to the common trash pile.
+    */
     bool Trash(CardId id){
         return MoveCard(id, hand, *trash);
     }
+
+    /*
+    Moves a (random) card with a matching id from hand to discard.
+    */
     bool Discard(CardId id){
         return MoveCard(id, hand, discardPile);
     }
+
+    /*
+    Shuffling randomness is based on system clock.
+    */
+    void ShuffleDiscardIntoDraw(){
+        // there's probably a better way to do this
+        for(const auto & c : discardPile){
+            Card card = c;
+            drawPile.push_back(card);
+        }
+        while(discardPile.size() > 0){
+            discardPile.pop_back();
+        }
+        unsigned seed = chrono::system_clock::now().time_since_epoch().count();
+        std::shuffle(drawPile.begin(), drawPile.end(), default_random_engine(seed));
+    }
+
+    /*
+    Draws specified amount of cards, shuffling discard into draw as appropriate.
+    */
     bool Draw(int count){
         for(size_t i = 0; i < count; i++){
             if(drawPile.size() > 0){
                 // drawPile.back() is the topmost card
-                // cout << "drawing 1 card\n";
                 Card card = drawPile.back();
                 hand.push_back(card);
                 drawPile.pop_back();
-                // cout << "draw pile now has a size of " << drawPile.size() << "\n";
             } else {
                 if(discardPile.size() > 0){
                     ShuffleDiscardIntoDraw();
@@ -472,12 +596,78 @@ private:
         }
         return true;
     }
+
+    /*
+    Moves all cards from one vector to another.
+    */
     void MoveAllCards(vector<Card> & original, vector<Card> & destination){
         destination.insert(destination.end(), make_move_iterator(original.begin()), make_move_iterator(original.end()));
         original.erase(original.begin(), original.end());
     }
 
-    // this function will break if cards have multiplte types
+    /*
+    Play all treasure cards in hand and move to buy phase.
+    */
+    void ClaimAll(){
+        vector<string> treasures;
+        for(Card c : hand){
+            if(c.data.type == CardType::TREASURE)
+                treasures.push_back(c.data.name);
+        }
+        for(string s : treasures)
+            PlayCard(s, CardType::TREASURE);
+    }
+
+    // ------------------------------------------------ CONTROL -------------------------------------------------------
+
+    /*
+    Recognize and execute commands accessible during both the buy and action phase.
+    */
+    bool BasicCommands(vector<string> tokens){
+        if(tokens.size() == 0){
+            return false;
+        } else if(tokens[0] == "shop" || tokens[0] == "s"){
+            PrintShop();
+            return true;
+        } else if(tokens[0] == "status" || tokens[0] == "st"){
+            PrintStatus(true);
+            return true;
+        } else if(tokens[0] == "discard" || tokens[0] == "di"){
+            PrintDiscard();
+            return true;
+        } else if(tokens[0] == "hand" || tokens[0] == "h"){
+            PrintHand();
+            return true;
+        } else if(tokens[0] == "played" || tokens[0] == "pd"){
+            PrintPlayArea();
+            return true;
+        } else if(tokens[0] == "deck" || tokens[0] == "d"){
+            PrintAll();
+            return true;
+        } else if(tokens[0] == "autoclaim" || tokens[0] == "ac"){
+            ToggleAutoClaim(tokens.size() > 1 ? tokens[1] : "");
+            return true;
+        }
+        return false;
+    }
+
+    /*
+    If autoclaim is on, ClaimAll() is called automatically upon entering the buy phase.
+    */
+    void ToggleAutoClaim(string arg){
+        if(arg == "on" || arg == "true"){
+            autoClaim = true;
+        } else if (arg == "off" || arg == "false"){
+            autoClaim = false;
+        } else {
+            autoClaim = !autoClaim;
+        }
+        cout << "autoclaim is now " << (autoClaim ? "on" : "off") << "\n";
+    }
+
+    /*
+    Finds a card of matching type in hand by name OR substring and attemps to play it, printing erorrs as appropriate.
+    */
     bool PlayCard(string name, CardType type){
         for(Card c : hand){
             if(StrLower(c.data.name) == StrLower(name)){
@@ -522,72 +712,10 @@ private:
         cout << "No card with unambiguously matcing name found in hand\n";
         return false;
     }
-    void ClaimAll(){
-        vector<string> treasures;
-        for(Card c : hand){
-            if(c.data.type == CardType::TREASURE)
-                treasures.push_back(c.data.name);
-        }
-        for(string s : treasures)
-            PlayCard(s, CardType::TREASURE);
-    }
 
-    void ShuffleDiscardIntoDraw(){
-        // cout << "Shuffling discard into draw\n";
-        // move cards from discard to draw
-        // there's probably a better way to do this
-        for(const auto & c : discardPile){
-            Card card = c;
-            drawPile.push_back(card);
-        }
-        while(discardPile.size() > 0){
-            discardPile.pop_back();
-        }
-        unsigned seed = chrono::system_clock::now().time_since_epoch().count();
-        std::shuffle(drawPile.begin(), drawPile.end(), default_random_engine(seed));
-        // cout << "draw pile now has a size of " << drawPile.size() << "\n";
-    }
-    // ------------------------------------------------ CONTROL -------------------------------------------------------
-
-    bool BasicCommands(vector<string> tokens){
-        if(tokens.size() == 0){
-            return false;
-        } else if(tokens[0] == "shop" || tokens[0] == "s"){
-            PrintShop();
-            return true;
-        } else if(tokens[0] == "status" || tokens[0] == "st"){
-            PrintStatus(true);
-            return true;
-        } else if(tokens[0] == "discard" || tokens[0] == "di"){
-            PrintDiscard();
-            return true;
-        } else if(tokens[0] == "hand" || tokens[0] == "h"){
-            PrintHand();
-            return true;
-        } else if(tokens[0] == "played" || tokens[0] == "pd"){
-            PrintPlayArea();
-            return true;
-        } else if(tokens[0] == "deck" || tokens[0] == "d"){
-            PrintAll();
-            return true;
-        } else if(tokens[0] == "autoclaim" || tokens[0] == "ac"){
-            ToggleAutoClaim(tokens.size() > 1 ? tokens[1] : "");
-            return true;
-        }
-        return false;
-    }
-    void ToggleAutoClaim(string arg){
-        if(arg == "on" || arg == "true"){
-            autoClaim = true;
-        } else if (arg == "off" || arg == "false"){
-            autoClaim = false;
-        } else {
-            autoClaim = !autoClaim;
-        }
-        cout << "autoclaim is now " << (autoClaim ? "on" : "off") << "\n";
-    }
-
-    // Handles player's action/buy phase. Returns true if turn should continue or false if player wants to end their turn.
+    /*
+    Handles player's action/buy phase. Returns true if buy phase should occur, false if it should be skipped.
+    */
     bool PlayPhase(bool isBuyPhase){
         while(GameShouldContinue(*shop)){
             PrintStatus(true);
@@ -638,6 +766,10 @@ private:
         }
         return true;
     }
+
+    /*
+    Handles clenup / end phase
+    */
     void EndTurn(){
         MoveAllCards(hand, discardPile);
         MoveAllCards(playArea, discardPile);
@@ -645,6 +777,10 @@ private:
     }
 
     // ------------------------------------------------ PRINTING -------------------------------------------------------
+
+    /*
+    Collection of functions used to display the state of the game.
+    */
 
     void PrintCardVector(vector<Card> vec){
         for(int i = 0; i < vec.size(); i++){
@@ -706,6 +842,10 @@ private:
     }
 
     // ------------------------------------------------ PLAY -------------------------------------------------------
+
+    /*
+    Collection of functions used to resolve card effects
+    */
 
     void PlayCopper(){
         gold++;
@@ -925,20 +1065,45 @@ private:
     }
 };
 
+/*
+Starts, advances and ends game. Tells players when to take their turns. Handles common areas like shop and trash.
+*/
 class Game{
 public:
     Game(){}
+
+    /*
+    Spela dataspel.
+    */
     void Start(){
+        // TODO setup options
+
+        // Set up game
+        Setup();
+
+        // Play until game end condition have been met
+        while(PlayRound());
+
+        // Results
+        EndGame();
+    }
+private:
+    
+    /*
+    Create players and shop.
+    */
+    void Setup(){
         // I wonder if this can cause problems in the future if player goes out of scope or something 
         Player playerOne("Player One", &shop, &trash);
-        players.push_back(&playerOne);
+        players.push_back(playerOne);
 
         // create shop
         size_t victoryCount = players.size() > 2 ? 12 : 8;
-        // debug
+        // ! debug
         victoryCount = 1;
         size_t curseCount = players.size() > 1 ? (players.size() - 1) * 10 : 10;
         size_t copperCount = 60 - players.size() * 7;
+
         // BASIC CARDS
         AddShopStack(CardId::COPPER, copperCount);
         AddShopStack(CardId::SILVER, 40);
@@ -947,6 +1112,8 @@ public:
         AddShopStack(CardId::DUCHY, victoryCount);
         AddShopStack(CardId::PROVINCE, victoryCount);
         AddShopStack(CardId::CURSE, 20);
+        
+        // TODO randomly select 10
         // SELECTED CARDS
         AddShopStack(CardId::SMITHY, 10);
         AddShopStack(CardId::VILLAGE, 10);
@@ -973,28 +1140,36 @@ public:
         AddShopStack(CardId::SPY, 10);
         AddShopStack(CardId::WITCH, 10);
         AddShopStack(CardId::MILITIA, 10);
-
-        while(PlayRound());
-
-        EndGame();
     }
-private:
-    // returns true if game should continue
+
+    /*
+    Lets each player take a turn. Returns false if game should end.
+    */
     bool PlayRound(){
-        for(auto p : players){
-            p->TakeTurn(players);
+        for(Player & p : players){
+            p.TakeTurn(&players);
             cout << "---------- Turn ended ----------\n";
+            if(!GameShouldContinue(shop)){
+                return false;
+            }
         }
-        return GameShouldContinue(shop);
+        return true;
     }
+
+    /*
+    Print results.
+    */
     void EndGame(){
         cout << "Game has ended\n";
         // TODO sort by score
-        for(Player * p : players){
-            cout << p->GetName() << ": " << p->Score() << "\n";
+        for(Player & p : players){
+            cout << p.GetName() << ": " << p.Score() << "\n";
         }
     }
 
+    /*
+    Creates shop stack. TODO add a dedicated shop stack class?
+    */
     void AddShopStack(CardId id, int count){
         vector<Card> cards;
         for(size_t i = 0; i < count; i++){
@@ -1004,11 +1179,15 @@ private:
         shop.push_back(cards);
     }
 
-    vector<Player*> players;
+    // member variables
+    vector<Player> players;
     vector<vector<Card>> shop;
     vector<Card> trash;
 };
 
+/*
+Segmentation fault jumpscare
+*/
 int main(){
     Game g;
     g.Start();
