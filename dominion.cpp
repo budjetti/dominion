@@ -525,7 +525,7 @@ private:
     }
 
     /*
-    Executes on-play effects of a card by its id.
+    Executes on-play effects of a card by its id. If card is played incorrectly, retry.
     */
     void ResolveEffect(CardId effect){
         if(cardEffects[effect]){
@@ -865,7 +865,7 @@ private:
     // ------------------------------------------------ PLAY -------------------------------------------------------
 
     /*
-    Collection of functions used to resolve card effects
+    Collection of functions used to resolve card effects. Returns false if played incorrectly.
     */
 
     bool PlayCopper(){
@@ -1049,7 +1049,7 @@ private:
     bool PlayFeast(){
         vector<string> tokens = ResponseToTokens("Gain card with cost 5 or less (eg. laboratory / lab): ");
         if(tokens.size() == 0){
-            return PlayFeast();
+            return false;
         }
         Card cardToGain = FindCard(tokens[0], *shop);
         if(cardToGain.data.cost <= 5){
