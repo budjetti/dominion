@@ -176,6 +176,8 @@ public:
     CardData data;
 };
 
+// ------------------------------------------ STATIC FUNCTIONS ------------------------------------
+
 /*
 Checks game end conditions and returns false if they have been met.
 */
@@ -204,6 +206,14 @@ static bool GameShouldContinue(vector<vector<Card>> & shop){
     }
     // provinces have depleted
     return false;
+}
+
+/*
+For example, CardId::ESTATE -> "Estate"
+*/
+static string CardIdToName(CardId id){
+    Card card(id);
+    return card.data.name;
 }
 
 /*
@@ -1175,19 +1185,20 @@ private:
                 continue;
             }
             
+            // has to be initialized outside switch statement
+            vector<CardId> bureaucratTargets{CardId::PROVINCE, CardId::DUCHY, CardId::GARDENS, CardId::ESTATE};
+
             switch (attackId)
             {
             case CardId::BUREAUCRAT:
                 // Player should be able to choose which victory card gets placed on top, because it might matter for remodel.
                 // I do not want to implement that, so cards *unlikely* to be chosen by remodel are looked for fist. 
-                if(p.FindCard("Province", p.hand).data.id != CardId::NO_ID){
-                    p.MoveCard(CardId::PROVINCE, p.hand, p.drawPile);
-                } else if(p.FindCard("Duchy", p.hand).data.id != CardId::NO_ID){
-                    p.MoveCard(CardId::DUCHY, p.hand, p.drawPile);
-                } else if(p.FindCard("Gardens", p.hand).data.id != CardId::NO_ID){
-                    p.MoveCard(CardId::GARDENS, p.hand, p.drawPile);
-                } else if(p.FindCard("Estate", p.hand).data.id != CardId::NO_ID){
-                    p.MoveCard(CardId::ESTATE, p.hand, p.drawPile);
+                for(CardId id : bureaucratTargets){
+                    if(p.FindCard(CardIdToName(id), p.hand).data.id != CardId::NO_ID){
+                        p.MoveCard(id, p.hand, p.drawPile);
+                        cout << p.name << " put " << CardIdToName(id) << " on their draw pile\n";
+                        break;
+                    }
                 }
                 break;
             
