@@ -316,7 +316,7 @@ private:
     Given a substring and a vector<Card>, finds card in said vector whose name most
     resembles substring, and returns the card's name.
     */
-    string SubstrToCard(string alias, vector<Card> cards){
+    Card SubstrToCard(string alias, vector<Card> cards){
         vector<Card> unique;
         for(Card c : cards){
             bool isCopy = false;
@@ -334,7 +334,7 @@ private:
         }
         if(unique.size() == 0){
             // no matching results
-            return "";
+            return Card(CardId::NO_ID);
         }
         for(int i = 0; i < alias.size(); i++){
             vector<Card> matchingUnique = unique;
@@ -348,16 +348,17 @@ private:
             unique = matchingUnique;
             if(unique.size() == 1)
                 // excactly one mathing result
-                return unique[0].data.name;
+                return unique[0];
         }
         // multiplte matching results
-        return "";
+        return Card(CardId::NO_ID);
     }
+
     /*
     Given a substring and a vector<vector<Card>> (shop), finds card in shop whose name most
     resembles substring, and returns the card's name.
     */
-    string SubstrToCard(string alias, vector<vector<Card>> cardStacks){
+    Card SubstrToCard(string alias, vector<vector<Card>> cardStacks){
         vector<Card> topCards;
         for(vector<Card> s : cardStacks){
             if(s.size() == 0)
@@ -481,7 +482,7 @@ private:
             }
         }
         // card not found in shop. maybe name was a substring?
-        string retry = SubstrToCard(name, *shop);
+        string retry = SubstrToCard(name, *shop).data.name;
         if(retry != name){
             return BuyCard(retry);
         }
@@ -609,13 +610,16 @@ private:
     Play all treasure cards in hand and move to buy phase.
     */
     void ClaimAll(){
+        // Do not try to do this in one for loop. It will break.
         vector<string> treasures;
         for(Card c : hand){
-            if(c.data.type == CardType::TREASURE)
+            if(c.data.type == CardType::TREASURE){
                 treasures.push_back(c.data.name);
+            }
         }
-        for(string s : treasures)
+        for(string s : treasures){
             PlayCard(s, CardType::TREASURE);
+        }
     }
 
     // ------------------------------------------------ CONTROL -------------------------------------------------------
@@ -705,7 +709,7 @@ private:
             }
         }
         // card not found in hand. maybe it was a substring?
-        string retry = SubstrToCard(name, hand);
+        string retry = SubstrToCard(name, hand).data.name;
         if(retry != name){
             return PlayCard(retry, type);
         }
@@ -889,9 +893,9 @@ private:
             }
         } else {
             for(string name : tokens){
-                name = SubstrToCard(name, hand);
+                Card cardToDiscard = SubstrToCard(name, hand);
                 for(Card & card : hand){
-                    if(StrLower(card.data.name) == StrLower(name)){
+                    if(card == cardToDiscard){
                         Discard(card.data.id);
                         discardedCount++;
                     }
@@ -929,23 +933,24 @@ private:
             PlayWorkshop();
             return;
         }
-        string name = SubstrToCard(tokens[0], *shop);
+        Card cardToGain = SubstrToCard(tokens[0], *shop);
         for(vector<Card> v : *shop){
-            if(StrLower(v.back().data.name) == StrLower(name)){
+            if(v.back() == cardToGain){
                 if(v.back().data.cost > 4){
                     cout << "Too expensive\n";
                     PlayWorkshop();
                     return;
                 } else {
-                    break;
+                    if(GainCard(name)){
+                        cout << "Gained " << name << "\n";
+                    } else {
+                        cout << "Could not gain " << name << "\n";
+                    }
+                    return;
                 }
             }
         }
-        if(GainCard(name)){
-            cout << "Gained " << name << "\n";
-        } else {
-            cout << "Could not gain " << name << "\n";
-        }
+        cout << "Could not find card " << tokens[0] << " in shop.\n";
     }
     void PlayLibrary(){
         vector<Card> aside;
@@ -1010,19 +1015,19 @@ private:
         cout << "Trash card from hand (eg. silver / si): ";
         string response;
         cin >> response;
-        string name = SubstrToCard(response, hand);
+        Card cardToTrash = SubstrToCard(response, hand);
         for(Card c : hand){
-            if(StrLower(c.data.name) == StrLower(name)){
+            if(c == cardToTrash){
                 size_t newCardCost = c.data.cost + 2;
                 cout << "Gain card with cost " << newCardCost << " or less (eg. copper): ";
                 string secondResponse;
                 cin >> secondResponse;
-                string secondName = SubstrToCard(secondResponse, *shop);
+                Card cardToGain = SubstrToCard(secondResponse, *shop);
                 for(vector<Card> v : *shop){
-                    if(v.back().data.name == secondName){
+                    if(v.back() == cardToGain){
                         if(v.back().data.cost <= newCardCost){
-                            GainCard(secondName);
-                            cout << "Gained " << secondName << " \n";
+                            GainCard(cardToGain.data.name);
+                            cout << "Gained " << cardToGain.data.name << " \n";
                         } else {
                             cout << "Too expensive.\n";
                         }
@@ -1087,8 +1092,13 @@ public:
         // Results
         EndGame();
     }
+
 private:
-    
+    // Member variables
+    vector<Player> players;
+    vector<vector<Card>> shop;
+    vector<Card> trash;
+     
     /*
     Create players and shop.
     */
@@ -1178,11 +1188,6 @@ private:
         }
         shop.push_back(cards);
     }
-
-    // member variables
-    vector<Player> players;
-    vector<vector<Card>> shop;
-    vector<Card> trash;
 };
 
 /*
