@@ -174,7 +174,6 @@ public:
         autoClaim(true),
         debug(true) 
     {
-        // cout << "New player created. Gaining starting cards. \n";
         GainStartingCards();
         PopulateEffects();
         Draw(5);
@@ -238,6 +237,8 @@ public:
         return total;
     }
 private:
+    // ------------------------------------------------ PRIVATE VARIABLES -------------------------------------------------------
+
     vector<Card> hand;
     vector<Card> discardPile;
     vector<Card> drawPile;
@@ -252,94 +253,56 @@ private:
     map<CardId, void (Player::*)()> cardEffects;
     bool autoClaim;
     bool debug;
+    
+    // ------------------------------------------------ STRING -------------------------------------------------------
 
-    bool BasicCommands(vector<string> tokens){
-        if(tokens.size() == 0){
-            return false;
-        } else if(tokens[0] == "shop" || tokens[0] == "s"){
-            PrintShop();
-            return true;
-        } else if(tokens[0] == "status" || tokens[0] == "st"){
-            PrintStatus(true);
-            return true;
-        } else if(tokens[0] == "discard" || tokens[0] == "di"){
-            PrintDiscard();
-            return true;
-        } else if(tokens[0] == "hand" || tokens[0] == "h"){
-            PrintHand();
-            return true;
-        } else if(tokens[0] == "played" || tokens[0] == "pd"){
-            PrintPlayArea();
-            return true;
-        } else if(tokens[0] == "deck" || tokens[0] == "d"){
-            PrintAll();
-            return true;
-        } else if(tokens[0] == "autoclaim" || tokens[0] == "ac"){
-            ToggleAutoClaim(tokens.size() > 1 ? tokens[1] : "");
-            return true;
-        }
-        return false;
-    }
-    void ToggleAutoClaim(string arg){
-        if(arg == "on" || arg == "true"){
-            autoClaim = true;
-        } else if (arg == "off" || arg == "false"){
-            autoClaim = false;
-        } else {
-            autoClaim = !autoClaim;
-        }
-        cout << "autoclaim is now " << (autoClaim ? "on" : "off") << "\n";
-    }
-    // Handles player's action/buy phase. Returns true if turn should continue or false if player wants to end their turn.
-    bool PlayPhase(bool isBuyPhase){
-        while(GameShouldContinue(*shop)){
-            PrintStatus(true);
-            cout << "[" << name << " - " << (isBuyPhase ? "buy" : "action") << "]: ";
-            vector<string> tokens = ResponseToTokens();
-            if(tokens.size() == 0){
-                continue;
-            }
-            if(tokens.size() == 1){
-                if(tokens[0] == "end" || tokens[0] == "e"){
-                    return false;
-                } else if(tokens[0] == "claim" || tokens[0] == "c"){
-                    if(!isBuyPhase)
-                        cout << "Move to buy phase\n";
-                    ClaimAll();
-                    if(isBuyPhase){
-                        continue;
-                    } else{
-                        // move to buy phase
-                        return true;
-                    }
+    string SubstrToCard(string alias, vector<Card> cards){
+        vector<Card> unique;
+        for(Card c : cards){
+            bool isCopy = false;
+            for(Card u : unique){
+                if(u == c){
+                    isCopy = true;
+                    break;
                 }
             }
-            if(BasicCommands(tokens)){
-                continue;
+            if(!isCopy){
+                // is this copying necessary?
+                Card copy = c;
+                unique.push_back(copy);
             }
-            if(tokens.size() > 1){
-                if(tokens[0] == "play" || tokens[0] == "p"){
-                    PlayCard(tokens[1], isBuyPhase ? CardType::TREASURE : CardType::ACTION);
-                    continue;
-                } else if (tokens[0] == "buy" || tokens[0] == "b"){
-                    if(!isBuyPhase)
-                        cout << "Move to buy phase\n";
-                    if(autoClaim)
-                        ClaimAll();
-                    BuyCard(tokens[1]);
-                    // check for game end
-
-                    if(isBuyPhase){
-                        continue;
-                    } else{
-                        // move to buy phase
-                        return true;
-                    }
+        }
+        if(unique.size() == 0){
+            // no matching results
+            return "";
+        }
+        for(int i = 0; i < alias.size(); i++){
+            vector<Card> matchingUnique = unique;
+            for(Card c : unique){
+                if(tolower(c.data.name[i]) != tolower(alias[i])){
+                    vector<Card>::iterator pos = find(matchingUnique.begin(), matchingUnique.end(), c);
+                    if(pos != matchingUnique.end())
+                        matchingUnique.erase(pos);
                 }
             }
-            cout << "Invalid input\n";
+            unique = matchingUnique;
+            if(unique.size() == 1)
+                // excactly one mathing result
+                return unique[0].data.name;
         }
-        return true;
+        // multiplte matching results
+        return "";
+    }
+    // override meant specifically for shop
+    string SubstrToCard(string alias, vector<vector<Card>> cardStacks){
+        vector<Card> topCards;
+        for(vector<Card> s : cardStacks){
+            if(s.size() == 0)
+                continue;
+            Card copy = s[0];
+            topCards.push_back(copy);
+        }
+        return SubstrToCard(alias, topCards);
     }
     string StrLower(string original){
         transform(original.begin(), original.end(), original.begin(), [](unsigned char c){return tolower(c);});
@@ -360,6 +323,9 @@ private:
         }
         return tokens;
     }
+
+    // ------------------------------------------------ SETUP -------------------------------------------------------
+
     void GainStartingCards(){
         if(debug){
             GainCard(CardId::COPPER, 1);
@@ -368,6 +334,9 @@ private:
             GainCard(CardId::CELLAR, 1);
             GainCard(CardId::LABORATORY, 1);
             GainCard(CardId::CHAPEL, 1);
+            GainCard(CardId::REMODEL, 1);
+            GainCard(CardId::WORKSHOP, 1);
+            GainCard(CardId::LIBRARY, 1);
         } else {
             GainCard(CardId::COPPER, 7);
             GainCard(CardId::ESTATE, 3);
@@ -402,6 +371,9 @@ private:
         cardEffects[CardId::WOODCUTTER] = &Player::PlayWoodcutter;
         cardEffects[CardId::LIBRARY] = &Player::PlayLibrary;
     }
+
+    // ------------------------------------------------ BASIC ACTIONS -------------------------------------------------------
+
     bool BuyCard(string name){
         if(buys <= 0){
             cout << "No buys remaining\n";
@@ -444,23 +416,6 @@ private:
         }
         return false;
     }
-    void PrintShop(){
-        CardType lastType = CardType::TREASURE;
-        cout << "---------- SHOP ----------\n";
-        for(auto shopStack : *shop){
-            if(shopStack.size() == 0){
-                cout << "Empty\n";
-            } else {
-                CardData data = shopStack.back().data;
-                if(lastType != CardType::ACTION && data.type != lastType){
-                    cout << "\n";
-                    lastType = data.type;
-                }
-                cout << shopStack.size() << "x " << data.name << " (" << data.cost << ")\n";
-            }
-        }
-        cout << "--------------------------\n";
-    }
     void ResolveEffect(CardId effect){
         if(cardEffects[effect]){
             // I love c++
@@ -469,53 +424,13 @@ private:
             cout << "Play function not found\n";
         }
     }
+    // TODO card should be gained from shop, instead of being materialized into existence
     void GainCard(CardId id, int count){
         for(size_t i = 0; i < count; i++){
             Card card(id);
             discardPile.push_back(card);
             // cout << "added card " <<  discardPile.back().data.name << " to discard\n";
         }
-    }
-    void PrintCardVector(vector<Card> vec){
-        for(int i = 0; i < vec.size(); i++){
-            cout << vec[i].data.name;
-            if(i < vec.size() - 1){
-                cout << ", ";
-            }
-        }
-        cout << "\n";
-    }
-    void PrintAll(){
-        PrintStatus(false);
-        PrintPlayArea();
-        PrintDrawPile();
-        PrintDiscard();
-    }
-    void PrintStatus(bool includeHand){
-        cout << "Gold: " << gold << " - Buys: " << buys << " - Actions: " << actions << (includeHand ? " - " : "\n");
-        PrintHand();
-    }
-    void PrintHand(){
-        cout << "Hand (" << hand.size() << "): ";
-        PrintCardVector(hand);
-    }
-    void PrintDrawPile(){
-        cout << "Draw (" << drawPile.size() << "): ";
-        for(int i = 0; i < drawPile.size(); i++){
-            cout << "?";
-            if(i < drawPile.size() - 1){
-                cout << ", ";
-            }
-        }
-        cout << "\n";
-    }
-    void PrintPlayArea(){
-        cout << "Play (" << playArea.size() << "): ";
-        PrintCardVector(playArea);
-    }
-    void PrintDiscard(){
-        cout << "Discard (" << discardPile.size() << "): ";
-        PrintCardVector(discardPile);
     }
     // this function works, but it's written in a goofy way
     bool MoveCard(CardId id, vector<Card> & oldVec, vector<Card> & newVec){
@@ -557,14 +472,9 @@ private:
         }
         return true;
     }
-    void EndTurn(){
-        MoveVectorContents(hand, discardPile);
-        MoveVectorContents(playArea, discardPile);
-        Draw(5);
-    }
-    void MoveVectorContents(vector<Card> & oldVec, vector<Card> & newVec){
-        newVec.insert(newVec.end(), make_move_iterator(oldVec.begin()), make_move_iterator(oldVec.end()));
-        oldVec.erase(oldVec.begin(), oldVec.end());
+    void MoveAllCards(vector<Card> & original, vector<Card> & destination){
+        destination.insert(destination.end(), make_move_iterator(original.begin()), make_move_iterator(original.end()));
+        original.erase(original.begin(), original.end());
     }
 
     // this function will break if cards have multiplte types
@@ -621,54 +531,6 @@ private:
         for(string s : treasures)
             PlayCard(s, CardType::TREASURE);
     }
-    string SubstrToCard(string alias, vector<Card> cards){
-        vector<Card> unique;
-        for(Card c : cards){
-            bool isCopy = false;
-            for(Card u : unique){
-                if(u == c){
-                    isCopy = true;
-                    break;
-                }
-            }
-            if(!isCopy){
-                // is this copying necessary?
-                Card copy = c;
-                unique.push_back(copy);
-            }
-        }
-        if(unique.size() == 0){
-            // no matching results
-            return "";
-        }
-        for(int i = 0; i < alias.size(); i++){
-            vector<Card> matchingUnique = unique;
-            for(Card c : unique){
-                if(tolower(c.data.name[i]) != tolower(alias[i])){
-                    vector<Card>::iterator pos = find(matchingUnique.begin(), matchingUnique.end(), c);
-                    if(pos != matchingUnique.end())
-                        matchingUnique.erase(pos);
-                }
-            }
-            unique = matchingUnique;
-            if(unique.size() == 1)
-                // excactly one mathing result
-                return unique[0].data.name;
-        }
-        // multiplte matching results
-        return "";
-    }
-    // override meant specifically for shop
-    string SubstrToCard(string alias, vector<vector<Card>> cardStacks){
-        vector<Card> topCards;
-        for(vector<Card> s : cardStacks){
-            if(s.size() == 0)
-                continue;
-            Card copy = s[0];
-            topCards.push_back(copy);
-        }
-        return SubstrToCard(alias, topCards);
-    }
 
     void ShuffleDiscardIntoDraw(){
         // cout << "Shuffling discard into draw\n";
@@ -685,6 +547,166 @@ private:
         std::shuffle(drawPile.begin(), drawPile.end(), default_random_engine(seed));
         // cout << "draw pile now has a size of " << drawPile.size() << "\n";
     }
+    // ------------------------------------------------ CONTROL -------------------------------------------------------
+
+    bool BasicCommands(vector<string> tokens){
+        if(tokens.size() == 0){
+            return false;
+        } else if(tokens[0] == "shop" || tokens[0] == "s"){
+            PrintShop();
+            return true;
+        } else if(tokens[0] == "status" || tokens[0] == "st"){
+            PrintStatus(true);
+            return true;
+        } else if(tokens[0] == "discard" || tokens[0] == "di"){
+            PrintDiscard();
+            return true;
+        } else if(tokens[0] == "hand" || tokens[0] == "h"){
+            PrintHand();
+            return true;
+        } else if(tokens[0] == "played" || tokens[0] == "pd"){
+            PrintPlayArea();
+            return true;
+        } else if(tokens[0] == "deck" || tokens[0] == "d"){
+            PrintAll();
+            return true;
+        } else if(tokens[0] == "autoclaim" || tokens[0] == "ac"){
+            ToggleAutoClaim(tokens.size() > 1 ? tokens[1] : "");
+            return true;
+        }
+        return false;
+    }
+    void ToggleAutoClaim(string arg){
+        if(arg == "on" || arg == "true"){
+            autoClaim = true;
+        } else if (arg == "off" || arg == "false"){
+            autoClaim = false;
+        } else {
+            autoClaim = !autoClaim;
+        }
+        cout << "autoclaim is now " << (autoClaim ? "on" : "off") << "\n";
+    }
+
+    // Handles player's action/buy phase. Returns true if turn should continue or false if player wants to end their turn.
+    bool PlayPhase(bool isBuyPhase){
+        while(GameShouldContinue(*shop)){
+            PrintStatus(true);
+            cout << "[" << name << " - " << (isBuyPhase ? "buy" : "action") << "]: ";
+            vector<string> tokens = ResponseToTokens();
+            if(tokens.size() == 0){
+                continue;
+            }
+            if(tokens.size() == 1){
+                if(tokens[0] == "end" || tokens[0] == "e"){
+                    return false;
+                } else if(tokens[0] == "claim" || tokens[0] == "c"){
+                    if(!isBuyPhase)
+                        cout << "Move to buy phase\n";
+                    ClaimAll();
+                    if(isBuyPhase){
+                        continue;
+                    } else{
+                        // move to buy phase
+                        return true;
+                    }
+                }
+            }
+            if(BasicCommands(tokens)){
+                continue;
+            }
+            if(tokens.size() > 1){
+                if(tokens[0] == "play" || tokens[0] == "p"){
+                    PlayCard(tokens[1], isBuyPhase ? CardType::TREASURE : CardType::ACTION);
+                    continue;
+                } else if (tokens[0] == "buy" || tokens[0] == "b"){
+                    if(!isBuyPhase)
+                        cout << "Move to buy phase\n";
+                    if(autoClaim)
+                        ClaimAll();
+                    BuyCard(tokens[1]);
+                    // check for game end
+
+                    if(isBuyPhase){
+                        continue;
+                    } else{
+                        // move to buy phase
+                        return true;
+                    }
+                }
+            }
+            cout << "Invalid input\n";
+        }
+        return true;
+    }
+    void EndTurn(){
+        MoveAllCards(hand, discardPile);
+        MoveAllCards(playArea, discardPile);
+        Draw(5);
+    }
+
+    // ------------------------------------------------ PRINTING -------------------------------------------------------
+
+    void PrintCardVector(vector<Card> vec){
+        for(int i = 0; i < vec.size(); i++){
+            cout << vec[i].data.name;
+            if(i < vec.size() - 1){
+                cout << ", ";
+            }
+        }
+        cout << "\n";
+    }
+    void PrintAll(){
+        PrintStatus(false);
+        PrintPlayArea();
+        PrintDrawPile();
+        PrintDiscard();
+    }
+    void PrintStatus(bool includeHand){
+        cout << "Gold: " << gold << " - Buys: " << buys << " - Actions: " << actions << (includeHand ? " - " : "\n");
+        PrintHand();
+    }
+    void PrintHand(){
+        cout << "Hand (" << hand.size() << "): ";
+        PrintCardVector(hand);
+    }
+    void PrintDrawPile(){
+        cout << "Draw (" << drawPile.size() << "): ";
+        for(int i = 0; i < drawPile.size(); i++){
+            cout << "?";
+            if(i < drawPile.size() - 1){
+                cout << ", ";
+            }
+        }
+        cout << "\n";
+    }
+    void PrintPlayArea(){
+        cout << "Play (" << playArea.size() << "): ";
+        PrintCardVector(playArea);
+    }
+    void PrintDiscard(){
+        cout << "Discard (" << discardPile.size() << "): ";
+        PrintCardVector(discardPile);
+    }
+    void PrintShop(){
+        CardType lastType = CardType::TREASURE;
+        cout << "---------- SHOP ----------\n";
+        for(auto shopStack : *shop){
+            if(shopStack.size() == 0){
+                cout << "Empty\n";
+            } else {
+                CardData data = shopStack.back().data;
+                if(lastType != CardType::ACTION && data.type != lastType){
+                    cout << "\n";
+                    lastType = data.type;
+                }
+                cout << shopStack.size() << "x " << data.name << " (" << data.cost << ")\n";
+            }
+        }
+        cout << "--------------------------\n";
+    }
+
+    // ------------------------------------------------ PLAY -------------------------------------------------------
+
     void PlayCopper(){
         gold++;
         // cout << "Played Copper for 1 gold\n";
@@ -808,7 +830,7 @@ private:
             // if not an action or action was not set aside
             Draw(1);
         }
-        MoveVectorContents(aside, discardPile);
+        MoveAllCards(aside, discardPile);
     }
     void PlayWoodcutter(){
         buys++;
@@ -841,7 +863,37 @@ private:
         gold++;
     }
     void PlayRemodel(){
-
+        if(hand.size() == 0){
+            cout << "No card to trash.\n";
+            return;
+        }
+        cout << "Trash card from hand (eg. silver / si): ";
+        string response;
+        cin >> response;
+        string name = SubstrToCard(response, hand);
+        for(Card c : hand){
+            if(StrLower(c.data.name) == StrLower(name)){
+                size_t newCardCost = c.data.cost + 2;
+                cout << "Gain card with cost " << newCardCost << " or less (eg. copper): ";
+                string secondResponse;
+                cin >> secondResponse;
+                string secondName = SubstrToCard(secondResponse, *shop);
+                for(vector<Card> v : *shop){
+                    if(v.back().data.name == secondName){
+                        if(v.back().data.cost <= newCardCost){
+                            GainCard(secondName);
+                            cout << "Gained " << secondName << " \n";
+                        } else {
+                            cout << "Too expensive.\n";
+                        }
+                        break;
+                    }
+                }
+                Trash(c.data.id);
+                return;
+            }
+        }
+        cout << "No card " << response << " found in hand.\n";
     }
     void PlayChancellor(){
         gold += 2;
@@ -849,7 +901,7 @@ private:
         string response;
         cin >> response;
         if(StrLower(response) == "y"){
-            MoveVectorContents(drawPile, discardPile);
+            MoveAllCards(drawPile, discardPile);
             cout << "Cards moved.\n";
         }
     }
