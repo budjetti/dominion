@@ -1064,7 +1064,18 @@ private:
         return true;
     }
     bool PlayThroneRoom(){
-        return false;
+        vector<string> tokens = ResponseToTokens("Choose card from hand to play twice (eg. witch / throne): ");
+        if(tokens.size() == 0){
+            return false;
+        }
+        Card card = FindCard(tokens[0], hand);
+        if(card.data.type != CardType::ACTION){
+            cout << "Not an action card\n";
+            return false;
+        }
+        PlayCard(card.data.name, CardType::ACTION);
+        ResolveEffect(card.data.id);
+        return true;
     }
     bool PlayMarket(){
         Draw(1);
