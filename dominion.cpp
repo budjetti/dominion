@@ -321,11 +321,11 @@ private:
     bool autoClaim;
     bool debug;
     
-    // ------------------------------------------------ STRING -------------------------------------------------------
+    // ------------------------------------------------ CARD / STRING -------------------------------------------------------
 
     /*
     Given a substring and a vector<Card>, finds card in said vector whose name most
-    resembles substring, and returns the card's name.
+    resembles substring, and returns a copy of the card.
     */
     Card FindCard(string alias, vector<Card> cards){
         vector<Card> unique;
@@ -367,7 +367,7 @@ private:
 
     /*
     Given a substring and a vector<vector<Card>> (shop), finds card in shop whose name most
-    resembles substring, and returns the card's name.
+    resembles substring, and returns a copy of that card.
     */
     Card FindCard(string alias, vector<vector<Card>> cardStacks){
         vector<Card> topCards;
@@ -1172,7 +1172,10 @@ private:
     }
 
     // ACTION - ATTACK
-    
+
+    /*
+    Handles the attack portion, which is blockable by moat, of attack cards.
+    */ 
     bool Attack(CardId attackId){
         for(Player & p : *allPlayers){
             cout << "looking at " << p.name << "\n";
@@ -1185,14 +1188,13 @@ private:
                 continue;
             }
             
-            // has to be initialized outside switch statement
+            // initializing this inside the switch statement causes a compile error
             vector<CardId> bureaucratTargets{CardId::PROVINCE, CardId::DUCHY, CardId::GARDENS, CardId::ESTATE};
 
             switch (attackId)
             {
             case CardId::BUREAUCRAT:
-                // Player should be able to choose which victory card gets placed on top, because it might matter for remodel.
-                // I do not want to implement that, so cards *unlikely* to be chosen by remodel are looked for fist. 
+                // TODO ask players at the start of their turn which victory card they'd like to move
                 for(CardId id : bureaucratTargets){
                     if(p.FindCard(CardIdToName(id), p.hand).data.id != CardId::NO_ID){
                         p.MoveCard(id, p.hand, p.drawPile);
@@ -1203,12 +1205,14 @@ private:
                 break;
             
             default:
+                cout << CardIdToName(attackId) << "'s attack implementation missing\n";
                 break;
             }
 
         }
         return true;
     }
+    // requires response
     bool PlayBureaucrat(){
         GainCard("Silver", &drawPile);
         Attack(CardId::BUREAUCRAT);
@@ -1223,6 +1227,7 @@ private:
     bool PlayWitch(){
         return true;
     }
+    // requires response
     bool PlayMilitia(){
         return true;
     }
