@@ -592,7 +592,7 @@ private:
     Draws specified amount of cards, shuffling discard into draw as appropriate.
     */
     bool Draw(int count){
-        cout << "drawing " << count << " cards by " << name << "\n";
+        // cout << "drawing " << count << " cards by " << name << "\n";
         for(size_t i = 0; i < count; i++){
             if(drawPile.size() > 0){
                 // drawPile.back() is the topmost card
@@ -1151,7 +1151,14 @@ private:
         return true;
     }
     bool PlayCouncilRoom(){
-        return false;
+        Draw(4);
+        buys++;
+        for(Player & p : *allPlayers){
+            if(p.name != name){
+                p.Draw(1);
+            }
+        }
+        return true;
     }
 
     // ACTION - ATTACK
@@ -1197,16 +1204,16 @@ private:
         return true;
     }
     bool PlayThief(){
-        return false;
+        return true;
     }
     bool PlaySpy(){
-        return false;
+        return true;
     }
     bool PlayWitch(){
-        return false;
+        return true;
     }
     bool PlayMilitia(){
-        return false;
+        return true;
     }
 
     // ACTION - REACTION
