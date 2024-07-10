@@ -307,7 +307,7 @@ private:
     size_t gold;
     size_t actions;
     size_t buys;
-    map<CardId, void (Player::*)()> cardEffects;
+    map<CardId, bool (Player::*)()> cardEffects;
     bool autoClaim;
     bool debug;
     
@@ -530,7 +530,10 @@ private:
     void ResolveEffect(CardId effect){
         if(cardEffects[effect]){
             // I love c++
-            (this->*cardEffects[effect])();
+            bool success = (this->*cardEffects[effect])();
+            if(!success){
+                ResolveEffect(effect);
+            }
         } else {
             cout << "Play function not found\n";
         }
@@ -865,36 +868,39 @@ private:
     Collection of functions used to resolve card effects
     */
 
-    void PlayCopper(){
+    bool PlayCopper(){
         gold++;
-        // cout << "Played Copper for 1 gold\n";
+        return true;
     }
-    void PlaySilver(){
+    bool PlaySilver(){
         gold += 2;
-        // cout << "Played Silver for 2 gold\n";
+        return true;
     }
-    void PlayGold(){
+    bool PlayGold(){
         gold += 3;
-        // cout << "Played Gold for 3 gold\n";
+        return true;
     }
-    void PlaySmithy(){
+    bool PlaySmithy(){
         Draw(3);
-        // cout << "Played Smithy to draw 3 cards\n";
+        return true;
     }
-    void PlayVillage(){
+    bool PlayVillage(){
         Draw(1);
         actions += 2;
+        return true;
     }
-    void PlayFestival(){
+    bool PlayFestival(){
         actions += 2;
         buys++;
         gold += 2;
+        return true;
     }
-    void PlayLaboratory(){
+    bool PlayLaboratory(){
         Draw(2);
         actions++;
+        return true;
     }
-    void PlayCellar(){
+    bool PlayCellar(){
         actions++;
         vector<string> tokens = ResponseToTokens("Discard (eg. estate estate copper / e e co / all): ");
         size_t discardedCount = 0;
@@ -916,19 +922,19 @@ private:
             }
         }
         Draw(discardedCount);
+        return true;
     }
-    void PlayChapel(){
+    bool PlayChapel(){
         vector<string> tokens = ResponseToTokens("Trash (eg. estate estate copper / e e co / all): ");
         if(tokens.size() == 0){
-            PlayChapel();
-            return;
+            return false;
         }
         if(tokens[0] == "all"){
             // doing a for loop here seems to not trash the last card...
             while(hand.size() > 0){
                 Trash(hand[0].data.id);
             }
-            return;
+            return true;
         }
         for(string name : tokens){
             for(Card & card : hand){
@@ -937,37 +943,39 @@ private:
                 }
             }
         }
+        return true;
     }
-    void PlayMoat(){
+    bool PlayMoat(){
         Draw(2);
+        return true;
     }
-    void PlayWorkshop(){
+    bool PlayWorkshop(){
         vector<string> tokens = ResponseToTokens("Gain a card costing up to 4 (eg. gardens, village): ");
         if(tokens.size() == 0){
             cout << "Please input a card\n";
-            PlayWorkshop();
-            return;
+            return false;
         }
         Card cardToGain = FindCard(tokens[0], *shop);
         for(vector<Card> v : *shop){
             if(v.back() == cardToGain){
                 if(v.back().data.cost > 4){
                     cout << "Too expensive\n";
-                    PlayWorkshop();
-                    return;
+                    return false;
                 } else {
                     if(GainCard(cardToGain.data.name)){
                         cout << "Gained " << cardToGain.data.name << "\n";
+                        return true;
                     } else {
                         cout << "Could not gain " << cardToGain.data.name << "\n";
+                        return false;
                     }
-                    return;
                 }
             }
         }
         cout << "Could not find card " << tokens[0] << " in shop.\n";
+        return false;
     }
-    void PlayLibrary(){
+    bool PlayLibrary(){
         vector<Card> aside;
         while(hand.size() < 7 && (drawPile.size() > 0 || discardPile.size() > 0)){
             if(drawPile.size() == 0){
@@ -990,57 +998,58 @@ private:
             Draw(1);
         }
         MoveAllCards(aside, discardPile);
+        return true;
     }
-    void PlayWoodcutter(){
+    bool PlayWoodcutter(){
         buys++;
         gold += 2;
+        return true;
     }
-    void PlayMoneylender(){
+    bool PlayMoneylender(){
         if(Trash(CardId::COPPER)){
             cout << "Trashed Copper for 3 gold\n";
             gold += 3;
         } else {
             cout << "Failed to trash Copper\n";
         }
+        return true;
     }
-    void PlayMine(){
+    bool PlayMine(){
         vector<string> tokens = ResponseToTokens("Trash treasure from hand (eg. copper / co): ");
         if(tokens.size() == 0){
-            PlayMine();
-            return;
+            return false;
         }
         Card treasureToTrash = FindCard(tokens[0], hand);
         if(treasureToTrash.data.type != CardType::TREASURE){
             cout << "Not a treasure card.\n";
-            return;
+            return false;
         }
         size_t newCost = treasureToTrash.data.cost + 3;
         cout << "Gain treasure with cost " << newCost << " or less (eg. silver / si): ";
         vector<string> tokens2 = ResponseToTokens("");
         if(tokens2.size() == 0){
-            PlayMine();
-            return;
+            return false;
         }
         Card treasureToGain = FindCard(tokens2[0], *shop);
         if(treasureToTrash.data.type != CardType::TREASURE){
             cout << "Not a treasure card.\n";
-            return;
+            return false;
         }
         if(treasureToGain.data.cost > newCost){
             cout << "Too expensive.\n";
-            return;
+            return false;
         }
         GainCard(treasureToGain.data.name, &hand);
         cout << "Gained " << treasureToGain.data.name << " into hand.\n";
+        return true;
     }
-    void PlayBureaucrat(){
-
+    bool PlayBureaucrat(){
+        return false;
     }
-    void PlayFeast(){
+    bool PlayFeast(){
         vector<string> tokens = ResponseToTokens("Gain card with cost 5 or less (eg. laboratory / lab): ");
         if(tokens.size() == 0){
-            PlayFeast();
-            return;
+            return PlayFeast();
         }
         Card cardToGain = FindCard(tokens[0], *shop);
         if(cardToGain.data.cost <= 5){
@@ -1048,39 +1057,42 @@ private:
             cout << "Gained " << cardToGain.data.name << "\n";
         } else {
             cout << "Too expensive\n";
+            return false;
         }
         // using MoveCard instead of Trash because the card is being moved from play area
         MoveCard(CardId::FEAST, playArea, *trash);
+        return true;
     }
-    void PlayThroneRoom(){
-
+    bool PlayThroneRoom(){
+        return false;
     }
-    void PlayMarket(){
+    bool PlayMarket(){
         Draw(1);
         actions++;
         buys++;
         gold++;
+        return true;
     }
-    void PlayRemodel(){
+    bool PlayRemodel(){
         if(hand.size() == 0){
             cout << "No card to trash.\n";
-            return;
+            return false;
         }
         vector<string> tokens = ResponseToTokens("Trash card from hand (eg. silver / si): ");
         if(tokens.size() == 0){
             PlayRemodel();
-            return;
+            return false;
         }
         Card cardToTrash = FindCard(tokens[0], hand);
         if(cardToTrash.data.id == CardId::NO_ID){
             cout << "No card " << tokens[0] << " found in hand.\n";
-            return;
+            return false;
         }
         size_t newCardCost = cardToTrash.data.cost + 2;
         cout << "Gain card with cost " << newCardCost << " or less (eg. copper): ";
         vector<string> tokens2 = ResponseToTokens("");
         if(tokens.size() == 0){
-            return;
+            return false;
         }
         Card cardToGain = FindCard(tokens2[0], *shop);
         if(cardToGain.data.cost <= newCardCost){
@@ -1088,35 +1100,37 @@ private:
             cout << "Gained " << cardToGain.data.name << " \n";
         } else {
             cout << "Too expensive.\n";
-            return;
+            return false;
         }
         Trash(cardToTrash.data.id);
-   }
-    void PlayChancellor(){
+        return true;
+    }
+    bool PlayChancellor(){
         gold += 2;
         cout << "Move " << drawPile.size() << " cards from draw to discard? (y/n): ";
         if(Confirm()){
             MoveAllCards(drawPile, discardPile);
             cout << "Cards moved.\n";
         }
+        return true;
     }
-    void PlayThief(){
-
+    bool PlayThief(){
+        return false;
     }
-    void PlayAdventurer(){
-
+    bool PlayAdventurer(){
+        return false;
     }
-    void PlayCouncilRoom(){
-
+    bool PlayCouncilRoom(){
+        return false;
     }
-    void PlaySpy(){
-
+    bool PlaySpy(){
+        return false;
     }
-    void PlayWitch(){
-
+    bool PlayWitch(){
+        return false;
     }
-    void PlayMilitia(){
-
+    bool PlayMilitia(){
+        return false;
     }
 };
 
