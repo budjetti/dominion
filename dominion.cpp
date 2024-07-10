@@ -317,7 +317,7 @@ private:
     Given a substring and a vector<Card>, finds card in said vector whose name most
     resembles substring, and returns the card's name.
     */
-    Card SubstrToCard(string alias, vector<Card> cards){
+    Card FindCard(string alias, vector<Card> cards){
         vector<Card> unique;
         for(Card c : cards){
             bool isCopy = false;
@@ -359,7 +359,7 @@ private:
     Given a substring and a vector<vector<Card>> (shop), finds card in shop whose name most
     resembles substring, and returns the card's name.
     */
-    Card SubstrToCard(string alias, vector<vector<Card>> cardStacks){
+    Card FindCard(string alias, vector<vector<Card>> cardStacks){
         vector<Card> topCards;
         for(vector<Card> s : cardStacks){
             if(s.size() == 0)
@@ -367,7 +367,7 @@ private:
             Card copy = s[0];
             topCards.push_back(copy);
         }
-        return SubstrToCard(alias, topCards);
+        return FindCard(alias, topCards);
     }
 
     /*
@@ -484,7 +484,7 @@ private:
             }
         }
         // card not found in shop. maybe name was a substring?
-        string retry = SubstrToCard(cardName, *shop).data.name;
+        string retry = FindCard(cardName, *shop).data.name;
         if(retry != cardName){
             return BuyCard(retry);
         }
@@ -723,7 +723,7 @@ private:
             }
         }
         // card not found in hand. maybe it was a substring?
-        string retry = SubstrToCard(name, hand).data.name;
+        string retry = FindCard(name, hand).data.name;
         if(retry != name){
             return PlayCard(retry, type);
         }
@@ -906,7 +906,7 @@ private:
             }
         } else {
             for(string name : tokens){
-                Card cardToDiscard = SubstrToCard(name, hand);
+                Card cardToDiscard = FindCard(name, hand);
                 for(Card & card : hand){
                     if(card == cardToDiscard){
                         Discard(card.data.id);
@@ -948,7 +948,7 @@ private:
             PlayWorkshop();
             return;
         }
-        Card cardToGain = SubstrToCard(tokens[0], *shop);
+        Card cardToGain = FindCard(tokens[0], *shop);
         for(vector<Card> v : *shop){
             if(v.back() == cardToGain){
                 if(v.back().data.cost > 4){
@@ -978,6 +978,7 @@ private:
             if(drawTop.data.type == CardType::ACTION){
                 cout << "Set aside " << drawTop.data.name << "? (y/n): ";
                 if(Confirm()){
+                    // move TOP card of draw pile aside
                     vector<Card>::iterator pos = drawPile.end();
                     Card copy(drawTop.data.id);
                     aside.push_back(copy);
@@ -1003,7 +1004,34 @@ private:
         }
     }
     void PlayMine(){
-
+        vector<string> tokens = ResponseToTokens("Trash treasure from hand (eg. copper / co): ");
+        if(tokens.size() == 0){
+            PlayMine();
+            return;
+        }
+        Card treasureToTrash = FindCard(tokens[0], hand);
+        if(treasureToTrash.data.type != CardType::TREASURE){
+            cout << "Not a treasure card.\n";
+            return;
+        }
+        size_t newCost = treasureToTrash.data.cost + 3;
+        cout << "Gain treasure with cost " << newCost << " or less (eg. silver / si): ";
+        vector<string> tokens2 = ResponseToTokens("");
+        if(tokens2.size() == 0){
+            PlayMine();
+            return;
+        }
+        Card treasureToGain = FindCard(tokens2[0], *shop);
+        if(treasureToTrash.data.type != CardType::TREASURE){
+            cout << "Not a treasure card.\n";
+            return;
+        }
+        if(treasureToGain.data.cost > newCost){
+            cout << "Too expensive.\n";
+            return;
+        }
+        GainCard(treasureToGain.data.name, &hand);
+        cout << "Gained " << treasureToGain.data.name << " into hand.\n";
     }
     void PlayBureaucrat(){
 
@@ -1014,7 +1042,7 @@ private:
             PlayFeast();
             return;
         }
-        Card cardToGain = SubstrToCard(tokens[0], *shop);
+        Card cardToGain = FindCard(tokens[0], *shop);
         if(cardToGain.data.cost <= 5){
             GainCard(cardToGain.data.name);
             cout << "Gained " << cardToGain.data.name << "\n";
@@ -1043,7 +1071,7 @@ private:
             PlayRemodel();
             return;
         }
-        Card cardToTrash = SubstrToCard(tokens[0], hand);
+        Card cardToTrash = FindCard(tokens[0], hand);
         if(cardToTrash.data.id == CardId::NO_ID){
             cout << "No card " << tokens[0] << " found in hand.\n";
             return;
@@ -1054,7 +1082,7 @@ private:
         if(tokens.size() == 0){
             return;
         }
-        Card cardToGain = SubstrToCard(tokens2[0], *shop);
+        Card cardToGain = FindCard(tokens2[0], *shop);
         if(cardToGain.data.cost <= newCardCost){
             GainCard(cardToGain.data.name);
             cout << "Gained " << cardToGain.data.name << " \n";
