@@ -381,7 +381,8 @@ private:
     /*
     Gets input with cin, takes words from input, lowercases them, and puts them in a vector.
     */
-    vector<string> ResponseToTokens(){
+    vector<string> ResponseToTokens(string prompt){
+        cout << prompt;
         string response;
         getline(cin, response);
         return TokenizeString(response);
@@ -631,6 +632,13 @@ private:
     // ------------------------------------------------ CONTROL -------------------------------------------------------
 
     /*
+    Use after prompting user to answer (y/n)
+    */
+    bool Confirm(){
+        return (ResponseToTokens("")[0] == "y");
+    }
+
+    /*
     Recognize and execute commands accessible during both the buy and action phase.
     */
     bool BasicCommands(vector<string> tokens){
@@ -730,7 +738,7 @@ private:
         while(GameShouldContinue(*shop)){
             PrintStatus(true);
             cout << "[" << name << " - " << (isBuyPhase ? "buy" : "action") << "]: ";
-            vector<string> tokens = ResponseToTokens();
+            vector<string> tokens = ResponseToTokens("");
             if(tokens.size() == 0){
                 continue;
             }
@@ -888,8 +896,7 @@ private:
     }
     void PlayCellar(){
         actions++;
-        cout << "Discard (eg. estate estate copper / e e co / all): ";
-        vector<string> tokens = ResponseToTokens();
+        vector<string> tokens = ResponseToTokens("Discard (eg. estate estate copper / e e co / all): ");
         size_t discardedCount = 0;
         if(tokens[0] == "all"){
             // doing a for loop here seems to not discard the last card...
@@ -911,8 +918,11 @@ private:
         Draw(discardedCount);
     }
     void PlayChapel(){
-        cout << "Trash (eg. estate estate copper / e e co / all): ";
-        vector<string> tokens = ResponseToTokens();
+        vector<string> tokens = ResponseToTokens("Trash (eg. estate estate copper / e e co / all): ");
+        if(tokens.size() == 0){
+            PlayChapel();
+            return;
+        }
         if(tokens[0] == "all"){
             // doing a for loop here seems to not trash the last card...
             while(hand.size() > 0){
@@ -932,8 +942,7 @@ private:
         Draw(2);
     }
     void PlayWorkshop(){
-        cout << "Gain a card costing up to 4 (eg. gardens, village): ";
-        vector<string> tokens = ResponseToTokens();
+        vector<string> tokens = ResponseToTokens("Gain a card costing up to 4 (eg. gardens, village): ");
         if(tokens.size() == 0){
             cout << "Please input a card\n";
             PlayWorkshop();
@@ -968,9 +977,7 @@ private:
             Card drawTop = drawPile.back();
             if(drawTop.data.type == CardType::ACTION){
                 cout << "Set aside " << drawTop.data.name << "? (y/n): ";
-                string answer;
-                cin >> answer;
-                if(StrLower(answer) == "y"){
+                if(Confirm()){
                     vector<Card>::iterator pos = drawPile.end();
                     Card copy(drawTop.data.id);
                     aside.push_back(copy);
@@ -1002,7 +1009,20 @@ private:
 
     }
     void PlayFeast(){
-
+        vector<string> tokens = ResponseToTokens("Gain card with cost 5 or less (eg. laboratory / lab): ");
+        if(tokens.size() == 0){
+            PlayFeast();
+            return;
+        }
+        Card cardToGain = SubstrToCard(tokens[0], *shop);
+        if(cardToGain.data.cost <= 5){
+            GainCard(cardToGain.data.name);
+            cout << "Gained " << cardToGain.data.name << "\n";
+        } else {
+            cout << "Too expensive\n";
+        }
+        // using MoveCard instead of Trash because the card is being moved from play area
+        MoveCard(CardId::FEAST, playArea, *trash);
     }
     void PlayThroneRoom(){
 
@@ -1018,40 +1038,36 @@ private:
             cout << "No card to trash.\n";
             return;
         }
-        cout << "Trash card from hand (eg. silver / si): ";
-        string response;
-        cin >> response;
-        Card cardToTrash = SubstrToCard(response, hand);
-        for(Card c : hand){
-            if(c == cardToTrash){
-                size_t newCardCost = c.data.cost + 2;
-                cout << "Gain card with cost " << newCardCost << " or less (eg. copper): ";
-                string secondResponse;
-                cin >> secondResponse;
-                Card cardToGain = SubstrToCard(secondResponse, *shop);
-                for(vector<Card> v : *shop){
-                    if(v.back() == cardToGain){
-                        if(v.back().data.cost <= newCardCost){
-                            GainCard(cardToGain.data.name);
-                            cout << "Gained " << cardToGain.data.name << " \n";
-                        } else {
-                            cout << "Too expensive.\n";
-                        }
-                        break;
-                    }
-                }
-                Trash(c.data.id);
-                return;
-            }
+        vector<string> tokens = ResponseToTokens("Trash card from hand (eg. silver / si): ");
+        if(tokens.size() == 0){
+            PlayRemodel();
+            return;
         }
-        cout << "No card " << response << " found in hand.\n";
-    }
+        Card cardToTrash = SubstrToCard(tokens[0], hand);
+        if(cardToTrash.data.id == CardId::NO_ID){
+            cout << "No card " << tokens[0] << " found in hand.\n";
+            return;
+        }
+        size_t newCardCost = cardToTrash.data.cost + 2;
+        cout << "Gain card with cost " << newCardCost << " or less (eg. copper): ";
+        vector<string> tokens2 = ResponseToTokens("");
+        if(tokens.size() == 0){
+            return;
+        }
+        Card cardToGain = SubstrToCard(tokens2[0], *shop);
+        if(cardToGain.data.cost <= newCardCost){
+            GainCard(cardToGain.data.name);
+            cout << "Gained " << cardToGain.data.name << " \n";
+        } else {
+            cout << "Too expensive.\n";
+            return;
+        }
+        Trash(cardToTrash.data.id);
+   }
     void PlayChancellor(){
         gold += 2;
         cout << "Move " << drawPile.size() << " cards from draw to discard? (y/n): ";
-        string response;
-        cin >> response;
-        if(StrLower(response) == "y"){
+        if(Confirm()){
             MoveAllCards(drawPile, discardPile);
             cout << "Cards moved.\n";
         }
