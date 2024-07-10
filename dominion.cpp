@@ -211,10 +211,11 @@ Responsible for most actions in the game, like taking turns and playing cards.
 */
 class Player{
 public:
-    Player(string name, vector<vector<Card>>* shop, vector<Card>* trash) : 
+    Player(string name, vector<vector<Card>>* shop, vector<Card>* trash, vector<Player>* allPlayers) : 
         name(name),
         shop(shop), 
         trash(trash), 
+        allPlayers(allPlayers),
         gold(0), 
         autoClaim(true),
         debug(true) 
@@ -228,9 +229,8 @@ public:
     Resolve action, buy and end phases.
     TODO deliver allPlayers somewhere else
     */
-    void TakeTurn(vector<Player>* allPlayers){
+    void TakeTurn(){
         // find a better place for delivering allPlayers?
-        players = allPlayers;
         if(debug){
             actions = 99;
             buys = 99;
@@ -302,7 +302,7 @@ private:
     vector<Card> playArea;
     vector<vector<Card>>* shop;
     vector<Card>* trash;
-    vector<Player>* players;
+    vector<Player>* allPlayers;
     string name;
     size_t gold;
     size_t actions;
@@ -410,6 +410,9 @@ private:
     void GainStartingCards(){
         // TODO make sure these cards are not taken from shop, or at least account for it
         if(debug){
+            CreateAndGainCard(CardId::BUREAUCRAT, 1);
+            CreateAndGainCard(CardId::ESTATE, 1);
+            return;
             CreateAndGainCard(CardId::COPPER, 1);
             CreateAndGainCard(CardId::SILVER, 1);
             CreateAndGainCard(CardId::SMITHY, 1);
@@ -589,6 +592,7 @@ private:
     Draws specified amount of cards, shuffling discard into draw as appropriate.
     */
     bool Draw(int count){
+        cout << "drawing " << count << " cards by " << name << "\n";
         for(size_t i = 0; i < count; i++){
             if(drawPile.size() > 0){
                 // drawPile.back() is the topmost card
@@ -868,6 +872,8 @@ private:
     Collection of functions used to resolve card effects. Returns false if played incorrectly.
     */
 
+    // TREASURE
+
     bool PlayCopper(){
         gold++;
         return true;
@@ -880,6 +886,9 @@ private:
         gold += 3;
         return true;
     }
+
+    // ACTION
+
     bool PlaySmithy(){
         Draw(3);
         return true;
@@ -943,10 +952,6 @@ private:
                 }
             }
         }
-        return true;
-    }
-    bool PlayMoat(){
-        Draw(2);
         return true;
     }
     bool PlayWorkshop(){
@@ -1043,9 +1048,6 @@ private:
         cout << "Gained " << treasureToGain.data.name << " into hand.\n";
         return true;
     }
-    bool PlayBureaucrat(){
-        return false;
-    }
     bool PlayFeast(){
         vector<string> tokens = ResponseToTokens("Gain card with cost 5 or less (eg. laboratory / lab): ");
         if(tokens.size() == 0){
@@ -1125,13 +1127,76 @@ private:
         }
         return true;
     }
-    bool PlayThief(){
-        return false;
-    }
     bool PlayAdventurer(){
-        return false;
+        vector<Card> aside;
+        size_t found = 0;
+        while(found < 2 && (drawPile.size() > 0 || discardPile.size() > 0)){
+            if(drawPile.size() == 0){
+                ShuffleDiscardIntoDraw();
+            }
+            Card drawTop = drawPile.back();
+            if(drawTop.data.type != CardType::TREASURE){
+                // if top card is not a treausre, "reveal it" (set it aside)
+                vector<Card>::iterator pos = drawPile.end();
+                Card copy(drawTop.data.id);
+                aside.push_back(copy);
+                drawPile.erase(pos);
+                continue;
+            }
+            // if it was a treasure, draw
+            Draw(1);
+            found++;
+        }
+        MoveAllCards(aside, discardPile);
+        return true;
     }
     bool PlayCouncilRoom(){
+        return false;
+    }
+
+    // ACTION - ATTACK
+    
+    bool Attack(CardId attackId){
+        for(Player & p : *allPlayers){
+            cout << "looking at " << p.name << "\n";
+            if(p.name == name){
+                continue;
+            }
+            // TODO make activating moat optional
+            if(p.FindCard("Moat", p.hand).data.id != CardId::NO_ID){
+                cout << p.name << " has moat\n";
+                continue;
+            }
+            
+            switch (attackId)
+            {
+            case CardId::BUREAUCRAT:
+                // Player should be able to choose which victory card gets placed on top, because it might matter for remodel.
+                // I do not want to implement that, so cards *unlikely* to be chosen by remodel are looked for fist. 
+                if(p.FindCard("Province", p.hand).data.id != CardId::NO_ID){
+                    p.MoveCard(CardId::PROVINCE, p.hand, p.drawPile);
+                } else if(p.FindCard("Duchy", p.hand).data.id != CardId::NO_ID){
+                    p.MoveCard(CardId::DUCHY, p.hand, p.drawPile);
+                } else if(p.FindCard("Gardens", p.hand).data.id != CardId::NO_ID){
+                    p.MoveCard(CardId::GARDENS, p.hand, p.drawPile);
+                } else if(p.FindCard("Estate", p.hand).data.id != CardId::NO_ID){
+                    p.MoveCard(CardId::ESTATE, p.hand, p.drawPile);
+                }
+                break;
+            
+            default:
+                break;
+            }
+
+        }
+        return true;
+    }
+    bool PlayBureaucrat(){
+        GainCard("Silver", &drawPile);
+        Attack(CardId::BUREAUCRAT);
+        return true;
+    }
+    bool PlayThief(){
         return false;
     }
     bool PlaySpy(){
@@ -1142,6 +1207,14 @@ private:
     }
     bool PlayMilitia(){
         return false;
+    }
+
+    // ACTION - REACTION
+
+    // Moat's secondary effect is implemented in Attack()
+    bool PlayMoat(){
+        Draw(2);
+        return true;
     }
 };
 
@@ -1179,8 +1252,10 @@ private:
     */
     void Setup(){
         // I wonder if this can cause problems in the future if player goes out of scope or something 
-        Player playerOne("Player One", &shop, &trash);
+        Player playerOne("Player One", &shop, &trash, &players);
         players.push_back(playerOne);
+        Player playerTwo("Player Two", &shop, &trash, &players);
+        players.push_back(playerTwo);
 
         // create shop
         size_t victoryCount = players.size() > 2 ? 12 : 8;
@@ -1232,7 +1307,7 @@ private:
     */
     bool PlayRound(){
         for(Player & p : players){
-            p.TakeTurn(&players);
+            p.TakeTurn();
             cout << "---------- Turn ended ----------\n";
             if(!GameShouldContinue(shop)){
                 return false;
