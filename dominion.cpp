@@ -23,6 +23,7 @@ Author: budjetti
 #include <map>
 #include <sstream>
 #include <cctype>
+#include <optional>
 
 // Controversial line of code ahead
 using namespace std;
@@ -461,7 +462,7 @@ private:
     /*
     Finds cards by name OR substring and buys it.
     */
-    bool BuyCard(string name){
+    bool BuyCard(string cardName){
         if(buys <= 0){
             cout << "No buys remaining\n";
             return false;
@@ -469,37 +470,42 @@ private:
         for(auto &shopStack : *shop){
             if(shopStack.size() == 0)
                 continue;
-            if(StrLower(shopStack.back().data.name) == StrLower(name)){
+            if(StrLower(shopStack.back().data.name) == StrLower(cardName)){
                 if(gold < shopStack.back().data.cost){
                     cout << "Not enough gold\n";
                     return false;
                 }
                 buys--;
                 gold -= shopStack.back().data.cost;
-                GainCard(name);
-                cout << "Bought " << name << "\n";
+                GainCard(cardName);
+                cout << "Bought " << cardName << "\n";
                 return true;
             }
         }
         // card not found in shop. maybe name was a substring?
-        string retry = SubstrToCard(name, *shop).data.name;
-        if(retry != name){
+        string retry = SubstrToCard(cardName, *shop).data.name;
+        if(retry != cardName){
             return BuyCard(retry);
         }
         cout << "No card with unambiguously matcing name found in shop\n";
         return false;
     }
 
+
     /*
-    Retreive card from shop.
+    Retreive card from shop. Goes into discard if destination is not specified.
     */
-    bool GainCard(string name){
+    bool GainCard(string name, optional<vector<Card>*> destinationParam = nullopt){
+        vector<Card> * destination = &discardPile;
+        if(destinationParam){
+            destination = *destinationParam;
+        }
         for(auto &shopStack : *shop){
             if(shopStack.size() == 0){
                 continue;
             }
             if(StrLower(shopStack.back().data.name) == StrLower(name)){
-                discardPile.insert(discardPile.end(), make_move_iterator(shopStack.begin()), make_move_iterator(shopStack.begin() + 1));
+                destination->insert(destination->end(), make_move_iterator(shopStack.begin()), make_move_iterator(shopStack.begin() + 1));
                 shopStack.erase(shopStack.begin(), shopStack.begin() + 1);
                 return true;
             }
@@ -941,10 +947,10 @@ private:
                     PlayWorkshop();
                     return;
                 } else {
-                    if(GainCard(name)){
-                        cout << "Gained " << name << "\n";
+                    if(GainCard(cardToGain.data.name)){
+                        cout << "Gained " << cardToGain.data.name << "\n";
                     } else {
-                        cout << "Could not gain " << name << "\n";
+                        cout << "Could not gain " << cardToGain.data.name << "\n";
                     }
                     return;
                 }
