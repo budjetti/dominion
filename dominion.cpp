@@ -1183,12 +1183,15 @@ private:
 
     // ACTION - ATTACK
 
-    void AttackResponse(CardId attackId){
+    // Returns vector<Card> because of thief. Definitely needs reworking if more attacks are added.
+    vector<Card> AttackResponse(CardId attackId){
+        vector<Card> thiefCards;
+
         cout << name << " is attacked by " << CardIdToName(attackId) << "\n";
         if(FindCard("Moat", hand).data.id != CardId::NO_ID){
             cout << "Cancel attack with Moat? (y/n): ";
             if(Confirm())
-                return;
+                return thiefCards;
         }
 
         // bureaucrat
@@ -1200,12 +1203,12 @@ private:
         case CardId::BUREAUCRAT:
             if(victoryCards.size() == 0){
                 cout << "No victory cards in hand\n";
-                return;
+                return thiefCards;
             }
             if(victoryCards.size() == 1){
                 MoveCard(victoryCards[0].data.id, hand, drawPile);
                 cout << "Moved " << victoryCards[0].data.name << " to top of draw pile\n";
-                return;
+                return thiefCards;
             }
             cout << "Victory cards in hand: ";
             for(int i = 0; i < victoryCards.size(); i++){
@@ -1220,15 +1223,28 @@ private:
                 Card card = FindCard(response[0], hand);
                 if(card.data.type == CardType::VICTORY){
                     MoveCard(card.data.id, hand, drawPile);
-                    return;
+                    return thiefCards;
                 }
             }
             break;
         
+        case CardId::SPY:
+            break;
+
+        case CardId::THIEF:
+            break;
+            
+        case CardId::MILITIA:
+            break;
+
+        case CardId::WITCH:
+            GainCard("Curse");
+            break;
+
         default:
             break;
         }
-
+        return thiefCards;
     }
 
     /*
@@ -1236,32 +1252,37 @@ private:
     */ 
     bool Attack(CardId attackId){
         for(Player & p : *allPlayers){
-            cout << "looking at " << p.name << "\n";
-            if(p.name == name){
-                continue;
+            // cout << "looking at " << p.name << "\n";
+            if(p.name != name || attackId == CardId::SPY){
+                p.AttackResponse(attackId);
             }
-            p.AttackResponse(attackId);
         }
         return true;
     }
 
-    // requires response
     bool PlayBureaucrat(){
         GainCard("Silver", &drawPile);
         Attack(CardId::BUREAUCRAT);
         return true;
     }
     bool PlayThief(){
+        Attack(CardId::THIEF);
         return true;
     }
     bool PlaySpy(){
+        actions++;
+        Draw(1);
+        Attack(CardId::SPY);
         return true;
     }
     bool PlayWitch(){
+        Draw(2);
+        Attack(CardId::WITCH);
         return true;
     }
-    // requires response
     bool PlayMilitia(){
+        gold += 2;
+        Attack(CardId::MILITIA);
         return true;
     }
 
