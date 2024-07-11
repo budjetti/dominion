@@ -230,7 +230,7 @@ public:
         allPlayers(allPlayers),
         gold(0), 
         autoClaim(true),
-        debug(false) 
+        debug(1) 
     {
         GainStartingCards();
         PopulateEffects();
@@ -434,18 +434,7 @@ private:
     void GainStartingCards(){
         // TODO make sure these cards are not taken from shop, or at least account for it
         if(debug){
-            CreateAndGainCard(CardId::BUREAUCRAT, 1);
-            CreateAndGainCard(CardId::ESTATE, 1);
-            return;
-            CreateAndGainCard(CardId::COPPER, 1);
-            CreateAndGainCard(CardId::SILVER, 1);
-            CreateAndGainCard(CardId::SMITHY, 1);
-            CreateAndGainCard(CardId::CELLAR, 1);
-            CreateAndGainCard(CardId::LABORATORY, 1);
-            CreateAndGainCard(CardId::CHAPEL, 1);
-            CreateAndGainCard(CardId::REMODEL, 1);
-            CreateAndGainCard(CardId::WORKSHOP, 1);
-            CreateAndGainCard(CardId::LIBRARY, 1);
+            CreateAndGainCard(CardId::CHAPEL, 10);
         } else {
             CreateAndGainCard(CardId::COPPER, 7);
             CreateAndGainCard(CardId::ESTATE, 3);
@@ -570,8 +559,8 @@ private:
     Moves a (random) card with a matching id from one vector to another. If ID is not provided, moves top card.
     */
     bool MoveCard(vector<Card> & oldVec, vector<Card> & newVec, optional<CardId> targetId = nullopt){
-        cout << "moving\n";
         if(oldVec.size() == 0){
+            cout << "empty\n";
             return false;
         }
         CardId id = CardId::NO_ID;
@@ -602,8 +591,9 @@ private:
     Moves a (random) card with a matching id to trash. Searches hand by default, draw pile if second param is true (thief)
     */
     bool Trash(CardId id, optional<bool> fromDraw = false){
-        if(fromDraw)
+        if(*fromDraw){
             return MoveCard(drawPile, *trash, id);
+        }
         return MoveCard(hand, *trash, id);
     }
 
@@ -990,12 +980,8 @@ private:
             }
             return true;
         }
-        for(string name : tokens){
-            for(Card & card : hand){
-                if(StrLower(card.data.name) == StrLower(name)){
-                    Trash(card.data.id);
-                }
-            }
+        for(string t : tokens){
+            Trash(FindCard(t, hand).data.id);
         }
         return true;
     }
