@@ -1107,6 +1107,7 @@ private:
             cout << "Not an action card\n";
             return false;
         }
+        actions++;
         PlayCard(card.data.name, CardType::ACTION);
         ResolveEffect(card.data.id);
         return true;
