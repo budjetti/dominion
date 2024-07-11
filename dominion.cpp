@@ -154,6 +154,8 @@ public:
         cards[CardId::SPY] = CardData(CardId::SPY, CardType::ACTION, "Spy", 4);
         cards[CardId::THIEF] = CardData(CardId::THIEF, CardType::ACTION, "Thief", 4);
         cards[CardId::WITCH] = CardData(CardId::WITCH, CardType::ACTION, "Witch", 5);
+        // NONE
+        cards[CardId::NO_ID] = CardData(CardId::NO_ID, CardType::NO_TYPE, "No Name", 0);
 
         // TODO include 2nd edition?
     }
@@ -328,6 +330,7 @@ private:
     resembles substring, and returns a copy of the card.
     */
     Card FindCard(string alias, vector<Card> cards){
+        // make a copy of cards with no duplicates
         vector<Card> unique;
         for(Card c : cards){
             bool isCopy = false;
@@ -344,10 +347,10 @@ private:
             }
         }
         if(unique.size() == 0){
-            // no matching results
+            // searched card pile was empty
             return Card(CardId::NO_ID);
         }
-        for(int i = 0; i < alias.size(); i++){
+        for(int i = 0; i < alias.length(); i++){
             vector<Card> matchingUnique = unique;
             for(Card c : unique){
                 if(tolower(c.data.name[i]) != tolower(alias[i])){
@@ -357,11 +360,12 @@ private:
                 }
             }
             unique = matchingUnique;
-            if(unique.size() == 1)
-                // excactly one mathing result
-                return unique[0];
         }
-        // multiplte matching results
+        // success - excatly one matching result
+        if(unique.size() == 1)
+            return unique[0];
+
+        // multiple cards with different results match search term - result is ambiguous
         return Card(CardId::NO_ID);
     }
 
@@ -1203,13 +1207,14 @@ private:
 
     // Returns vector<Card> because of thief. Definitely needs reworking if more attacks are added.
     vector<Card> AttackResponse(CardId attackId){
-        vector<Card> thiefCards;
+        vector<Card> selected;
 
         cout << name << " is attacked by " << CardIdToName(attackId) << "\n";
+        cout << FindCard("Moat", hand).data.name << "\n";
         if(FindCard("Moat", hand).data.id != CardId::NO_ID){
             cout << "Cancel attack with Moat? (y/n): ";
             if(Confirm())
-                return thiefCards;
+                return selected;
         }
 
         // bureaucrat
@@ -1224,12 +1229,12 @@ private:
             victoryCards = FindCardsOfType(CardType::VICTORY, hand);
             if(victoryCards.size() == 0){
                 cout << "No victory cards in hand\n";
-                return thiefCards;
+                return selected;
             }
             if(victoryCards.size() == 1){
                 MoveCard(hand, drawPile, victoryCards[0].data.id);
                 cout << "Moved " << victoryCards[0].data.name << " to top of draw pile\n";
-                return thiefCards;
+                return selected;
             }
             cout << "Victory cards in hand: ";
             PrintCardVector(victoryCards);
@@ -1238,7 +1243,7 @@ private:
                 Card card = FindCard(response[0], hand);
                 if(card.data.type == CardType::VICTORY){
                     MoveCard(hand, drawPile, card.data.id);
-                    return thiefCards;
+                    return selected;
                 }
             }
             break;
@@ -1255,11 +1260,21 @@ private:
                     break;
                 }
                 Card copy(drawPile.rbegin()[i].data.id);
-                thiefCards.push_back(copy);
+                selected.push_back(copy);
             }
             break;
             
         case CardId::MILITIA:
+            while(hand.size() > 3){
+                PrintHand();
+                cout << "Discard " << hand.size() - 3 << " cards (eg. est est pro): ";
+                response = ResponseToTokens("");
+                for(string s : response){
+                    if(Discard(FindCard(s, hand).data.id)){
+                        cout << name << " discarded " << s << "\n";
+                    }
+                }
+            }
             break;
 
         case CardId::WITCH:
@@ -1269,7 +1284,7 @@ private:
         default:
             break;
         }
-        return thiefCards;
+        return selected;
     }
 
     /*
@@ -1280,6 +1295,8 @@ private:
             // cout << "looking at " << p.name << "\n";
             if(p.name != name || attackId == CardId::SPY){
                 vector<Card> thiefCards = p.AttackResponse(attackId);
+
+                // Thief needs a response
                 if(attackId == CardId::THIEF){
                     cout << p.name << " revealed: ";
                     PrintCardVector(thiefCards);
