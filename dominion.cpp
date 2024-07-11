@@ -230,7 +230,7 @@ public:
         allPlayers(allPlayers),
         gold(0), 
         autoClaim(true),
-        debug(1) 
+        debug(0) 
     {
         GainStartingCards();
         PopulateEffects();
@@ -601,8 +601,9 @@ private:
     Moves a (random) card with a matching id to discard. Searches hand by default, draw pile if second param is true (spy)
     */
     bool Discard(CardId id, optional<bool> fromDraw = false){
-        if(fromDraw)
+        if(*fromDraw){
             return MoveCard(drawPile, discardPile, id);
+        }
         return MoveCard(hand, discardPile, id);
     }
 
