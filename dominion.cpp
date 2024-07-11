@@ -380,6 +380,16 @@ private:
         return FindCard(alias, topCards);
     }
 
+    vector<Card> FindCardsOfType(CardType type, vector<Card> cards){
+        vector<Card> found;
+        for(Card c : cards){
+            if(c.data.type == type){
+                found.push_back(c);
+            }
+        }
+        return found;
+    }
+
     /*
     SRY CAPS
     */
@@ -1173,6 +1183,54 @@ private:
 
     // ACTION - ATTACK
 
+    void AttackResponse(CardId attackId){
+        cout << name << " is attacked by " << CardIdToName(attackId) << "\n";
+        if(FindCard("Moat", hand).data.id != CardId::NO_ID){
+            cout << "Cancel attack with Moat? (y/n): ";
+            if(Confirm())
+                return;
+        }
+
+        // bureaucrat
+        vector<Card> victoryCards = FindCardsOfType(CardType::VICTORY, hand);
+        vector<string> response;
+
+        switch (attackId)
+        {
+        case CardId::BUREAUCRAT:
+            if(victoryCards.size() == 0){
+                cout << "No victory cards in hand\n";
+                return;
+            }
+            if(victoryCards.size() == 1){
+                MoveCard(victoryCards[0].data.id, hand, drawPile);
+                cout << "Moved " << victoryCards[0].data.name << " to top of draw pile\n";
+                return;
+            }
+            cout << "Victory cards in hand: ";
+            for(int i = 0; i < victoryCards.size(); i++){
+                cout << victoryCards[i].data.name;
+                if(i < victoryCards.size() - 1){
+                    cout << ", ";
+                }
+            }
+            cout << "\n";
+            while(1){
+                response = ResponseToTokens("Choose card to put on top (eg. estate / es): ");
+                Card card = FindCard(response[0], hand);
+                if(card.data.type == CardType::VICTORY){
+                    MoveCard(card.data.id, hand, drawPile);
+                    return;
+                }
+            }
+            break;
+        
+        default:
+            break;
+        }
+
+    }
+
     /*
     Handles the attack portion, which is blockable by moat, of attack cards.
     */ 
@@ -1182,36 +1240,11 @@ private:
             if(p.name == name){
                 continue;
             }
-            // TODO make activating moat optional
-            if(p.FindCard("Moat", p.hand).data.id != CardId::NO_ID){
-                cout << p.name << " has moat\n";
-                continue;
-            }
-            
-            // initializing this inside the switch statement causes a compile error
-            vector<CardId> bureaucratTargets{CardId::PROVINCE, CardId::DUCHY, CardId::GARDENS, CardId::ESTATE};
-
-            switch (attackId)
-            {
-            case CardId::BUREAUCRAT:
-                // TODO ask players at the start of their turn which victory card they'd like to move
-                for(CardId id : bureaucratTargets){
-                    if(p.FindCard(CardIdToName(id), p.hand).data.id != CardId::NO_ID){
-                        p.MoveCard(id, p.hand, p.drawPile);
-                        cout << p.name << " put " << CardIdToName(id) << " on their draw pile\n";
-                        break;
-                    }
-                }
-                break;
-            
-            default:
-                cout << CardIdToName(attackId) << "'s attack implementation missing\n";
-                break;
-            }
-
+            p.AttackResponse(attackId);
         }
         return true;
     }
+
     // requires response
     bool PlayBureaucrat(){
         GainCard("Silver", &drawPile);
