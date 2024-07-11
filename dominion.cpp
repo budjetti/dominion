@@ -563,9 +563,23 @@ private:
     }
     
     /*
-    Moves a (random) card with a matching id from one vector to another.
+    Moves a (random) card with a matching id from one vector to another. If ID is not provided, moves top card.
     */
-    bool MoveCard(CardId id, vector<Card> & oldVec, vector<Card> & newVec){
+    bool MoveCard(vector<Card> & oldVec, vector<Card> & newVec, optional<CardId> targetId = nullopt){
+        if(oldVec.size() == 0){
+        }
+        CardId id = CardId::NO_ID;
+        if(targetId){
+            id = *targetId;
+        }
+        if(id == CardId::NO_ID){
+            vector<Card>::iterator pos = drawPile.end();
+            Card copy(oldVec.back().data.id);
+            newVec.push_back(copy);
+            drawPile.erase(pos);
+            return true;
+        }
+
         for(Card c : oldVec){
             if(c.data.id == id){
                 vector<Card>::iterator pos = find(oldVec.begin(), oldVec.end(), c);
@@ -579,17 +593,20 @@ private:
     }
 
     /*
-    Moves a (random) card with a matching id from hand to the common trash pile.
+    Moves a (random) card with a matching id to trash. Searches hand by default, draw pile if second param is true (for thief)
     */
-    bool Trash(CardId id){
-        return MoveCard(id, hand, *trash);
+    bool Trash(CardId id, optional<bool> fromDraw = false){
+        if(fromDraw){
+            return MoveCard(drawPile, *trash, id);
+        }
+        return MoveCard(hand, *trash, id);
     }
 
     /*
     Moves a (random) card with a matching id from hand to discard.
     */
     bool Discard(CardId id){
-        return MoveCard(id, hand, discardPile);
+        return MoveCard(hand, discardPile, id);
     }
 
     /*
@@ -616,6 +633,7 @@ private:
         for(size_t i = 0; i < count; i++){
             if(drawPile.size() > 0){
                 // drawPile.back() is the topmost card
+                cout << name << " draws " << drawPile.back().data.name << "\n";
                 Card card = drawPile.back();
                 hand.push_back(card);
                 drawPile.pop_back();
@@ -1082,7 +1100,7 @@ private:
             return false;
         }
         // using MoveCard instead of Trash because the card is being moved from play area
-        MoveCard(CardId::FEAST, playArea, *trash);
+        MoveCard(playArea, *trash, CardId::FEAST);
         return true;
     }
     bool PlayThroneRoom(){
@@ -1195,34 +1213,31 @@ private:
         }
 
         // bureaucrat
-        vector<Card> victoryCards = FindCardsOfType(CardType::VICTORY, hand);
+        vector<Card> victoryCards;
+
+        // bureaucrat, militia
         vector<string> response;
 
         switch (attackId)
         {
         case CardId::BUREAUCRAT:
+            victoryCards = FindCardsOfType(CardType::VICTORY, hand);
             if(victoryCards.size() == 0){
                 cout << "No victory cards in hand\n";
                 return thiefCards;
             }
             if(victoryCards.size() == 1){
-                MoveCard(victoryCards[0].data.id, hand, drawPile);
+                MoveCard(hand, drawPile, victoryCards[0].data.id);
                 cout << "Moved " << victoryCards[0].data.name << " to top of draw pile\n";
                 return thiefCards;
             }
             cout << "Victory cards in hand: ";
-            for(int i = 0; i < victoryCards.size(); i++){
-                cout << victoryCards[i].data.name;
-                if(i < victoryCards.size() - 1){
-                    cout << ", ";
-                }
-            }
-            cout << "\n";
+            PrintCardVector(victoryCards);
             while(1){
                 response = ResponseToTokens("Choose card to put on top (eg. estate / es): ");
                 Card card = FindCard(response[0], hand);
                 if(card.data.type == CardType::VICTORY){
-                    MoveCard(card.data.id, hand, drawPile);
+                    MoveCard(hand, drawPile, card.data.id);
                     return thiefCards;
                 }
             }
@@ -1232,6 +1247,16 @@ private:
             break;
 
         case CardId::THIEF:
+            if(drawPile.size() < 2){
+                ShuffleDiscardIntoDraw();
+            }
+            for(int i = 0; i < 2; i++){
+                if(drawPile.size() <= i){
+                    break;
+                }
+                Card copy(drawPile.rbegin()[i].data.id);
+                thiefCards.push_back(copy);
+            }
             break;
             
         case CardId::MILITIA:
@@ -1254,7 +1279,22 @@ private:
         for(Player & p : *allPlayers){
             // cout << "looking at " << p.name << "\n";
             if(p.name != name || attackId == CardId::SPY){
-                p.AttackResponse(attackId);
+                vector<Card> thiefCards = p.AttackResponse(attackId);
+                if(attackId == CardId::THIEF){
+                    cout << p.name << " revealed: ";
+                    PrintCardVector(thiefCards);
+                    for(Card c : thiefCards){
+                        if(c.data.type == CardType::TREASURE){
+                            cout << "Steal " << c.data.name << "? (y/n): ";
+                            if(Confirm()){
+                                p.Trash(c.data.id, true);
+                                GainCard(c.data.name);
+                                cout << "Stole " << c.data.name << " from " << p.name << "\n";
+                                break;
+                            }
+                        }
+                    }
+                }
             }
         }
         return true;
