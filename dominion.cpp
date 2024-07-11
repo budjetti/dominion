@@ -230,7 +230,7 @@ public:
         allPlayers(allPlayers),
         gold(0), 
         autoClaim(true),
-        debug(true) 
+        debug(false) 
     {
         GainStartingCards();
         PopulateEffects();
@@ -570,7 +570,9 @@ private:
     Moves a (random) card with a matching id from one vector to another. If ID is not provided, moves top card.
     */
     bool MoveCard(vector<Card> & oldVec, vector<Card> & newVec, optional<CardId> targetId = nullopt){
+        cout << "moving\n";
         if(oldVec.size() == 0){
+            return false;
         }
         CardId id = CardId::NO_ID;
         if(targetId){
@@ -1210,8 +1212,8 @@ private:
     vector<Card> AttackResponse(CardId attackId){
         vector<Card> selected;
 
-        // cout << name << " is attacked by " << CardIdToName(attackId) << "\n";
-        // cout << FindCard("Moat", hand).data.name << "\n";
+        cout << name << " is attacked by " << CardIdToName(attackId) << "\n";
+        cout << FindCard("Moat", hand).data.name << "\n";
         if(FindCard("Moat", hand).data.id != CardId::NO_ID){
             cout << "Cancel attack with Moat? (y/n): ";
             if(Confirm())
@@ -1300,7 +1302,7 @@ private:
     */ 
     bool Attack(CardId attackId){
         for(Player & p : *allPlayers){
-            // cout << "looking at " << p.name << "\n";
+            cout << "looking at " << p.name << "\n";
             // Spy also targets self
             if(p.name != name || attackId == CardId::SPY){
                 vector<Card> selected = p.AttackResponse(attackId);
@@ -1371,6 +1373,15 @@ private:
 };
 
 /*
+Used for sorting shop stacks.
+*/
+static bool GreaterCost(CardId a, CardId b){
+    Card first(a);
+    Card second(b);
+    return first.data.cost < second.data.cost;
+}
+
+/*
 Starts, advances and ends game. Tells players when to take their turns. Handles common areas like shop and trash.
 */
 class Game{
@@ -1412,7 +1423,7 @@ private:
         // create shop
         size_t victoryCount = players.size() > 2 ? 12 : 8;
         // ! debug
-        victoryCount = 1;
+        // victoryCount = 1;
         size_t curseCount = players.size() > 1 ? (players.size() - 1) * 10 : 10;
         size_t copperCount = 60 - players.size() * 7;
 
@@ -1425,33 +1436,46 @@ private:
         AddShopStack(CardId::PROVINCE, victoryCount);
         AddShopStack(CardId::CURSE, 20);
         
-        // TODO randomly select 10
-        // SELECTED CARDS
-        AddShopStack(CardId::SMITHY, 10);
-        AddShopStack(CardId::VILLAGE, 10);
-        AddShopStack(CardId::FESTIVAL, 10);
-        AddShopStack(CardId::LABORATORY, 10);
-        AddShopStack(CardId::CELLAR, 10);
-        AddShopStack(CardId::CHAPEL, 10);
-        AddShopStack(CardId::GARDENS, 10);
-        AddShopStack(CardId::MOAT, 10);
-        AddShopStack(CardId::WORKSHOP, 10);
-        AddShopStack(CardId::WOODCUTTER, 10);
-        AddShopStack(CardId::MARKET, 10);
-        AddShopStack(CardId::MONEYLENDER, 10);
-        AddShopStack(CardId::MINE, 10);
-        AddShopStack(CardId::BUREAUCRAT, 10);
-        AddShopStack(CardId::FEAST, 10);
-        AddShopStack(CardId::THRONE_ROOM, 10);
-        AddShopStack(CardId::REMODEL, 10);
-        AddShopStack(CardId::CHANCELLOR, 10);
-        AddShopStack(CardId::LIBRARY, 10);
-        AddShopStack(CardId::THIEF, 10);
-        AddShopStack(CardId::ADVENTURER, 10);
-        AddShopStack(CardId::COUNCIL_ROOM, 10);
-        AddShopStack(CardId::SPY, 10);
-        AddShopStack(CardId::WITCH, 10);
-        AddShopStack(CardId::MILITIA, 10);
+        // 10 RANDOMLY SELECTED CARDS
+        vector<CardId> selected{
+            // 2
+            CardId::CELLAR,
+            CardId::CHAPEL,
+            CardId::MOAT,
+            // 3
+            CardId::WORKSHOP,
+            CardId::VILLAGE,
+            CardId::WOODCUTTER,
+            CardId::CHANCELLOR,
+            // 4
+            CardId::MONEYLENDER,
+            CardId::GARDENS,
+            CardId::SMITHY,
+            CardId::THRONE_ROOM,
+            CardId::BUREAUCRAT,
+            CardId::FEAST,
+            CardId::SPY,
+            CardId::MILITIA,
+            CardId::THIEF,
+            CardId::REMODEL,
+            // 5
+            CardId::WITCH,
+            CardId::COUNCIL_ROOM,
+            CardId::MARKET,
+            CardId::MINE,
+            CardId::FESTIVAL,
+            CardId::LIBRARY,
+            CardId::LABORATORY,
+            // 6
+            CardId::ADVENTURER,
+        };
+        unsigned seed = chrono::system_clock::now().time_since_epoch().count();
+        std::shuffle(selected.begin(), selected.end(), default_random_engine(seed));
+        selected.erase(selected.begin() + 10, selected.end());
+        sort(selected.begin(), selected.end(), GreaterCost);
+        for(CardId id : selected){
+            AddShopStack(id, (id == CardId::GARDENS ? victoryCount : 10));
+        }
     }
 
     /*
