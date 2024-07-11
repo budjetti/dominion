@@ -597,19 +597,20 @@ private:
     }
 
     /*
-    Moves a (random) card with a matching id to trash. Searches hand by default, draw pile if second param is true (for thief)
+    Moves a (random) card with a matching id to trash. Searches hand by default, draw pile if second param is true (thief)
     */
     bool Trash(CardId id, optional<bool> fromDraw = false){
-        if(fromDraw){
+        if(fromDraw)
             return MoveCard(drawPile, *trash, id);
-        }
         return MoveCard(hand, *trash, id);
     }
 
     /*
-    Moves a (random) card with a matching id from hand to discard.
+    Moves a (random) card with a matching id to discard. Searches hand by default, draw pile if second param is true (spy)
     */
-    bool Discard(CardId id){
+    bool Discard(CardId id, optional<bool> fromDraw = false){
+        if(fromDraw)
+            return MoveCard(drawPile, discardPile, id);
         return MoveCard(hand, discardPile, id);
     }
 
@@ -637,7 +638,7 @@ private:
         for(size_t i = 0; i < count; i++){
             if(drawPile.size() > 0){
                 // drawPile.back() is the topmost card
-                cout << name << " draws " << drawPile.back().data.name << "\n";
+                // cout << name << " draws " << drawPile.back().data.name << "\n";
                 Card card = drawPile.back();
                 hand.push_back(card);
                 drawPile.pop_back();
@@ -1209,8 +1210,8 @@ private:
     vector<Card> AttackResponse(CardId attackId){
         vector<Card> selected;
 
-        cout << name << " is attacked by " << CardIdToName(attackId) << "\n";
-        cout << FindCard("Moat", hand).data.name << "\n";
+        // cout << name << " is attacked by " << CardIdToName(attackId) << "\n";
+        // cout << FindCard("Moat", hand).data.name << "\n";
         if(FindCard("Moat", hand).data.id != CardId::NO_ID){
             cout << "Cancel attack with Moat? (y/n): ";
             if(Confirm())
@@ -1249,6 +1250,13 @@ private:
             break;
         
         case CardId::SPY:
+            if(drawPile.size() == 0){
+                ShuffleDiscardIntoDraw();
+            }
+            if(drawPile.size() > 1){
+                Card copy(drawPile.back().data.id);
+                selected.push_back(copy);
+            }
             break;
 
         case CardId::THIEF:
@@ -1293,14 +1301,15 @@ private:
     bool Attack(CardId attackId){
         for(Player & p : *allPlayers){
             // cout << "looking at " << p.name << "\n";
+            // Spy also targets self
             if(p.name != name || attackId == CardId::SPY){
-                vector<Card> thiefCards = p.AttackResponse(attackId);
+                vector<Card> selected = p.AttackResponse(attackId);
 
                 // Thief needs a response
                 if(attackId == CardId::THIEF){
                     cout << p.name << " revealed: ";
-                    PrintCardVector(thiefCards);
-                    for(Card c : thiefCards){
+                    PrintCardVector(selected);
+                    for(Card c : selected){
                         if(c.data.type == CardType::TREASURE){
                             cout << "Steal " << c.data.name << "? (y/n): ";
                             if(Confirm()){
@@ -1309,6 +1318,15 @@ private:
                                 cout << "Stole " << c.data.name << " from " << p.name << "\n";
                                 break;
                             }
+                        }
+                    }
+                } else if(attackId == CardId::SPY){
+                    if(selected.size() == 0){
+                        cout << p.name << " has no cards to reveal\n";
+                    } else {
+                        cout << "Make " << p.name << " discard " << selected[0].data.name << "? (y/n): ";
+                        if(Confirm()){
+                            p.MoveCard(p.drawPile, p.discardPile);
                         }
                     }
                 }
