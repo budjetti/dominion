@@ -13,6 +13,16 @@ Repo: github.com/budjetti/dominion
 Author: budjetti
 */
 
+/*
+GENERAL TODO
+    Turn counter
+    Help command
+    Card descriptions
+    Game settings
+    Bot
+    Split file & Make
+*/
+
 #include <iostream>
 #include <stdlib.h>
 #include <string>
