@@ -272,31 +272,28 @@ public:
     size_t Score(){
         size_t total = 0;
         size_t gardens = 0;
-        vector<vector<Card>> deck{hand, discardPile, drawPile, playArea};
-        for(vector<Card> v : deck){
-            for(Card c : v){
-                if(c.data.type != CardType::VICTORY)
-                    continue;
-                switch(c.data.id){
-                    case CardId::ESTATE:
-                        total++;
-                        break;
-                    case CardId::DUCHY:
-                        total += 3;
-                        break;
-                    case CardId::PROVINCE:
-                        total += 6;
-                        break;
-                    case CardId::CURSE:
-                        total--;
-                        break;
-                    case CardId::GARDENS:
-                        gardens++;
-                        break;
-                    default:
-                        cout << "failed to score victory card\n";
-                        break;
-                }
+        for(Card c : GetDeck()){
+            if(c.data.type != CardType::VICTORY)
+                continue;
+            switch(c.data.id){
+                case CardId::ESTATE:
+                    total++;
+                    break;
+                case CardId::DUCHY:
+                    total += 3;
+                    break;
+                case CardId::PROVINCE:
+                    total += 6;
+                    break;
+                case CardId::CURSE:
+                    total--;
+                    break;
+                case CardId::GARDENS:
+                    gardens++;
+                    break;
+                default:
+                    cout << "failed to score victory card\n";
+                    break;
             }
         }
         if(gardens > 0){
@@ -672,6 +669,16 @@ private:
         }
     }
 
+    vector<Card> GetDeck(){
+        vector<vector<Card>> piles{hand, discardPile, drawPile, playArea};
+        vector<Card> deck;
+        deck.reserve(hand.size() + discardPile.size() + drawPile.size() + playArea.size());
+        for(auto v : piles){
+            deck.insert(deck.end(), v.begin(), v.end());
+        }
+        return deck;
+    }
+
     // ------------------------------------------------ CONTROL -------------------------------------------------------
 
     /*
@@ -857,6 +864,20 @@ private:
         PrintPlayArea();
         PrintDrawPile();
         PrintDiscard();
+        PrintDeck();
+    }
+    void PrintDeck(){
+        map<string, size_t> cards;
+        vector<Card> deck = GetDeck();
+        for(Card c : deck){
+            cards[c.data.name]++;
+        }
+        cout << "Deck (" << deck.size() << "): ";
+        for(auto const& [cardName, count] : cards){
+            cout << count << "x " << cardName;
+            cout << ", ";
+        }
+        cout << "\b\b " << "\n";
     }
     void PrintStatus(bool includeHand){
         cout << "Gold: " << gold << " - Buys: " << buys << " - Actions: " << actions << (includeHand ? " - " : "\n");
@@ -993,20 +1014,16 @@ private:
             return false;
         }
         Card cardToGain = FindCard(tokens[0], *shop);
-        for(vector<Card> v : *shop){
-            if(v.back() == cardToGain){
-                if(v.back().data.cost > 4){
-                    cout << "Too expensive\n";
-                    return false;
-                } else {
-                    if(GainCard(cardToGain.data.name)){
-                        cout << "Gained " << cardToGain.data.name << "\n";
-                        return true;
-                    } else {
-                        cout << "Could not gain " << cardToGain.data.name << "\n";
-                        return false;
-                    }
-                }
+        if (cardToGain.data.cost > 4){
+            cout << "Too expensive\n";
+            return false;
+        } else {
+            if(GainCard(cardToGain.data.name)){
+                cout << "Gained " << cardToGain.data.name << "\n";
+                return true;
+            } else {
+                cout << "Could not gain " << cardToGain.data.name << "\n";
+                return false;
             }
         }
         cout << "Could not find card " << tokens[0] << " in shop.\n";
