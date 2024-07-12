@@ -70,14 +70,6 @@ enum class CardId{
     SPY,
     THIEF,
     ADVENTURER,
-    //ACTION (2nd edition only)
-    HARBRINGER,
-    MERCHANT,
-    VASSAL,
-    POACHER,
-    BANDIT,
-    SENTRY,
-    ARTISAN,
     // OTHER
     NO_ID,
 };
@@ -213,9 +205,124 @@ static bool GameShouldContinue(vector<vector<Card>> & shop){
 /*
 For example, CardId::ESTATE -> "Estate"
 */
-static string CardIdToName(CardId id){
+static const string CardIdToName(CardId id){
     Card card(id);
     return card.data.name;
+}
+
+/*
+Given a substring and a vector<Card>, finds card in said vector whose name most
+resembles substring, and returns a copy of the card.
+*/
+static const Card FindCard(string alias, vector<Card> cards){
+    // make a copy of cards with no duplicates
+    vector<Card> unique;
+    for(Card c : cards){
+        bool isCopy = false;
+        for(Card u : unique){
+            if(u == c){
+                isCopy = true;
+                break;
+            }
+        }
+        if(!isCopy){
+            // is this copying necessary?
+            Card copy = c;
+            unique.push_back(copy);
+        }
+    }
+    if(unique.size() == 0){
+        // searched card pile was empty
+        return Card(CardId::NO_ID);
+    }
+    for(int i = 0; i < alias.length(); i++){
+        vector<Card> matchingUnique = unique;
+        for(Card c : unique){
+            if(tolower(c.data.name[i]) != tolower(alias[i])){
+                vector<Card>::iterator pos = find(matchingUnique.begin(), matchingUnique.end(), c);
+                if(pos != matchingUnique.end())
+                    matchingUnique.erase(pos);
+            }
+        }
+        unique = matchingUnique;
+    }
+    // success - excatly one matching result
+    if(unique.size() == 1)
+        return unique[0];
+
+    // multiple cards with different results match search term - result is ambiguous
+    return Card(CardId::NO_ID);
+}
+/*
+Given a substring and a vector<vector<Card>> (shop), finds card in shop whose name most
+resembles substring, and returns a copy of that card.
+*/
+static const Card FindCard(string alias, vector<vector<Card>> cardStacks){
+    vector<Card> topCards;
+    for(vector<Card> s : cardStacks){
+        if(s.size() == 0)
+            continue;
+        Card copy = s[0];
+        topCards.push_back(copy);
+    }
+    return FindCard(alias, topCards);
+}
+
+static const vector<Card> FindCardsOfType(CardType type, vector<Card> cards){
+    vector<Card> found;
+    for(Card c : cards){
+        if(c.data.type == type){
+            found.push_back(c);
+        }
+    }
+    return found;
+}
+
+/*
+SRY CAPS
+*/
+static const string StrLower(string original){
+    transform(original.begin(), original.end(), original.begin(), [](unsigned char c){return tolower(c);});
+    return original;
+}
+
+/*
+Takes words from string, lowercases them, and puts them in a vector.
+*/
+static const vector<string> TokenizeString(string original){
+    vector<string> tokens;
+    string lower = StrLower(original);
+    istringstream iss(lower);
+    string s;
+    while(getline(iss, s, ' ')){
+        tokens.push_back(s.c_str());
+    }
+    return tokens;
+}
+
+/*
+Gets input with cin, takes words from input, lowercases them, and puts them in a vector.
+*/
+static const vector<string> ResponseToTokens(string prompt){
+    cout << prompt;
+    string response;
+    getline(cin, response);
+    return TokenizeString(response);
+}
+
+/*
+Moves all cards from one vector to another.
+*/
+static const void MoveAllCards(vector<Card> & original, vector<Card> & destination){
+    destination.insert(destination.end(), make_move_iterator(original.begin()), make_move_iterator(original.end()));
+    original.erase(original.begin(), original.end());
+}
+
+/*
+Use after prompting user to answer (y/n)
+*/
+static const bool Confirm(){
+    return (ResponseToTokens("")[0] == "y");
 }
 
 /*
@@ -252,10 +359,13 @@ public:
             buys = 1;
             gold = 0;
         }
-        // only do buy phase if player did not end turn during the action phase
+        
+        // action phase
         if(PlayPhase(false)){
+            // buy phase - skipped if player wants to end their turn
             PlayPhase(true);
         }
+        // end phase
         EndTurn();
     }
 
@@ -320,109 +430,6 @@ private:
     bool autoClaim;
     bool debug;
     
-    // ------------------------------------------------ CARD / STRING -------------------------------------------------------
-
-    /*
-    Given a substring and a vector<Card>, finds card in said vector whose name most
-    resembles substring, and returns a copy of the card.
-    */
-    Card FindCard(string alias, vector<Card> cards){
-        // make a copy of cards with no duplicates
-        vector<Card> unique;
-        for(Card c : cards){
-            bool isCopy = false;
-            for(Card u : unique){
-                if(u == c){
-                    isCopy = true;
-                    break;
-                }
-            }
-            if(!isCopy){
-                // is this copying necessary?
-                Card copy = c;
-                unique.push_back(copy);
-            }
-        }
-        if(unique.size() == 0){
-            // searched card pile was empty
-            return Card(CardId::NO_ID);
-        }
-        for(int i = 0; i < alias.length(); i++){
-            vector<Card> matchingUnique = unique;
-            for(Card c : unique){
-                if(tolower(c.data.name[i]) != tolower(alias[i])){
-                    vector<Card>::iterator pos = find(matchingUnique.begin(), matchingUnique.end(), c);
-                    if(pos != matchingUnique.end())
-                        matchingUnique.erase(pos);
-                }
-            }
-            unique = matchingUnique;
-        }
-        // success - excatly one matching result
-        if(unique.size() == 1)
-            return unique[0];
-
-        // multiple cards with different results match search term - result is ambiguous
-        return Card(CardId::NO_ID);
-    }
-
-    /*
-    Given a substring and a vector<vector<Card>> (shop), finds card in shop whose name most
-    resembles substring, and returns a copy of that card.
-    */
-    Card FindCard(string alias, vector<vector<Card>> cardStacks){
-        vector<Card> topCards;
-        for(vector<Card> s : cardStacks){
-            if(s.size() == 0)
-                continue;
-            Card copy = s[0];
-            topCards.push_back(copy);
-        }
-        return FindCard(alias, topCards);
-    }
-
-    vector<Card> FindCardsOfType(CardType type, vector<Card> cards){
-        vector<Card> found;
-        for(Card c : cards){
-            if(c.data.type == type){
-                found.push_back(c);
-            }
-        }
-        return found;
-    }
-
-    /*
-    SRY CAPS
-    */
-    string StrLower(string original){
-        transform(original.begin(), original.end(), original.begin(), [](unsigned char c){return tolower(c);});
-        return original;
-    }
-
-    /*
-    Gets input with cin, takes words from input, lowercases them, and puts them in a vector.
-    */
-    vector<string> ResponseToTokens(string prompt){
-        cout << prompt;
-        string response;
-        getline(cin, response);
-        return TokenizeString(response);
-    }
-
-    /*
-    Takes words from string, lowercases them, and puts them in a vector.
-    */
-    vector<string> TokenizeString(string original){
-        vector<string> tokens;
-        string lower = StrLower(original);
-        istringstream iss(lower);
-        string s;
-        while(getline(iss, s, ' ')){
-            tokens.push_back(s.c_str());
-        }
-        return tokens;
-    }
-
     // ------------------------------------------------ SETUP -------------------------------------------------------
 
     /*
@@ -646,14 +653,6 @@ private:
     }
 
     /*
-    Moves all cards from one vector to another.
-    */
-    void MoveAllCards(vector<Card> & original, vector<Card> & destination){
-        destination.insert(destination.end(), make_move_iterator(original.begin()), make_move_iterator(original.end()));
-        original.erase(original.begin(), original.end());
-    }
-
-    /*
     Play all treasure cards in hand and move to buy phase.
     */
     void ClaimAll(){
@@ -669,7 +668,7 @@ private:
         }
     }
 
-    vector<Card> GetDeck(){
+    const vector<Card> GetDeck(){
         vector<vector<Card>> piles{hand, discardPile, drawPile, playArea};
         vector<Card> deck;
         deck.reserve(hand.size() + discardPile.size() + drawPile.size() + playArea.size());
@@ -677,60 +676,6 @@ private:
             deck.insert(deck.end(), v.begin(), v.end());
         }
         return deck;
-    }
-
-    // ------------------------------------------------ CONTROL -------------------------------------------------------
-
-    /*
-    Use after prompting user to answer (y/n)
-    */
-    bool Confirm(){
-        return (ResponseToTokens("")[0] == "y");
-    }
-
-    /*
-    Recognize and execute commands accessible during both the buy and action phase.
-    */
-    bool BasicCommands(vector<string> tokens){
-        if(tokens.size() == 0){
-            return false;
-        } else if(tokens[0] == "shop" || tokens[0] == "s"){
-            PrintShop();
-            return true;
-        } else if(tokens[0] == "status" || tokens[0] == "st"){
-            PrintStatus(true);
-            return true;
-        } else if(tokens[0] == "discard" || tokens[0] == "di"){
-            PrintDiscard();
-            return true;
-        } else if(tokens[0] == "hand" || tokens[0] == "h"){
-            PrintHand();
-            return true;
-        } else if(tokens[0] == "played" || tokens[0] == "pd"){
-            PrintPlayArea();
-            return true;
-        } else if(tokens[0] == "deck" || tokens[0] == "d"){
-            PrintAll();
-            return true;
-        } else if(tokens[0] == "autoclaim" || tokens[0] == "ac"){
-            ToggleAutoClaim(tokens.size() > 1 ? tokens[1] : "");
-            return true;
-        }
-        return false;
-    }
-
-    /*
-    If autoclaim is on, ClaimAll() is called automatically upon entering the buy phase.
-    */
-    void ToggleAutoClaim(string arg){
-        if(arg == "on" || arg == "true"){
-            autoClaim = true;
-        } else if (arg == "off" || arg == "false"){
-            autoClaim = false;
-        } else {
-            autoClaim = !autoClaim;
-        }
-        cout << "autoclaim is now " << (autoClaim ? "on" : "off") << "\n";
     }
 
     /*
@@ -780,6 +725,54 @@ private:
         cout << "No card with unambiguously matcing name found in hand\n";
         return false;
     }
+
+    // ------------------------------------------------ CONTROL -------------------------------------------------------
+
+    /*
+    Recognize and execute commands accessible during both the buy and action phase.
+    */
+    bool BasicCommands(vector<string> tokens){
+        if(tokens.size() == 0){
+            return false;
+        } else if(tokens[0] == "shop" || tokens[0] == "s"){
+            PrintShop();
+            return true;
+        } else if(tokens[0] == "status" || tokens[0] == "st"){
+            PrintStatus(true);
+            return true;
+        } else if(tokens[0] == "discard" || tokens[0] == "di"){
+            PrintDiscard();
+            return true;
+        } else if(tokens[0] == "hand" || tokens[0] == "h"){
+            PrintHand();
+            return true;
+        } else if(tokens[0] == "played" || tokens[0] == "pd"){
+            PrintPlayArea();
+            return true;
+        } else if(tokens[0] == "deck" || tokens[0] == "d"){
+            PrintAll();
+            return true;
+        } else if(tokens[0] == "autoclaim" || tokens[0] == "ac"){
+            ToggleAutoClaim(tokens.size() > 1 ? tokens[1] : "");
+            return true;
+        }
+        return false;
+    }
+
+    /*
+    If autoclaim is on, ClaimAll() is called automatically upon entering the buy phase.
+    */
+    void ToggleAutoClaim(string arg){
+        if(arg == "on" || arg == "true"){
+            autoClaim = true;
+        } else if (arg == "off" || arg == "false"){
+            autoClaim = false;
+        } else {
+            autoClaim = !autoClaim;
+        }
+        cout << "autoclaim is now " << (autoClaim ? "on" : "off") << "\n";
+    }
+
 
     /*
     Handles player's action/buy phase. Returns true if buy phase should occur, false if it should be skipped.
@@ -847,7 +840,7 @@ private:
     // ------------------------------------------------ PRINTING -------------------------------------------------------
 
     /*
-    Collection of functions used to display the state of the game.
+    Functions used to display the state of the game.
     */
 
     void PrintCardVector(vector<Card> vec){
@@ -926,7 +919,7 @@ private:
     // ------------------------------------------------ PLAY -------------------------------------------------------
 
     /*
-    Collection of functions used to resolve card effects. Returns false if played incorrectly.
+    Functions used to resolve card effects. Returns false if played incorrectly.
     */
 
     // TREASURE
@@ -1380,7 +1373,7 @@ private:
 /*
 Used for sorting shop stacks.
 */
-static bool GreaterCost(CardId a, CardId b){
+static const bool GreaterCost(CardId a, CardId b){
     Card first(a);
     Card second(b);
     return first.data.cost < second.data.cost;
