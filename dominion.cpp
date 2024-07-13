@@ -505,9 +505,10 @@ protected:
     /*
     Finds cards by name OR substring and buys it.
     */
-    bool BuyCard(string cardName){
+    bool BuyCard(string cardName, optional<bool> verbose = true){
         if(buys <= 0){
-            cout << "No buys remaining\n";
+            if(*verbose)
+                cout << "No buys remaining\n";
             return false;
         }
         for(auto &shopStack : *shop){
@@ -515,7 +516,8 @@ protected:
                 continue;
             if(StrLower(shopStack.back().data.name) == StrLower(cardName)){
                 if(gold < shopStack.back().data.cost){
-                    cout << "Not enough gold\n";
+                    if(*verbose)
+                        cout << "Not enough gold\n";
                     return false;
                 }
                 buys--;
@@ -528,9 +530,10 @@ protected:
         // card not found in shop. maybe name was a substring?
         string retry = FindCard(cardName, *shop).data.name;
         if(retry != cardName){
-            return BuyCard(retry);
+            return BuyCard(retry, *verbose);
         }
-        cout << "No card with unambiguously matcing name found in shop\n";
+        if(*verbose)
+            cout << "No card with unambiguously matcing name found in shop\n";
         return false;
     }
 
@@ -703,24 +706,28 @@ protected:
     /*
     Finds a card of matching type in hand by name OR substring and attemps to play it, printing erorrs as appropriate.
     */
-    bool PlayCard(string name, CardType type){
+    bool PlayCard(string name, CardType type, optional<bool> verbose = true){
         for(Card c : hand){
             if(StrLower(c.data.name) == StrLower(name)){
                 // -------------- FAIL CONDITIONS --------------
                 if(actions <= 0 && type == CardType::ACTION){
-                    cout << "No actions remaining.\n";
+                    if(*verbose)
+                        cout << "No actions remaining.\n";
                     return false;
                 }
                 if(c.data.type == CardType::ACTION){
                     if(type == CardType::TREASURE){
-                        cout << c.data.name << " is not a treasure card\n";
+                        if(*verbose)
+                            cout << c.data.name << " is not a treasure card\n";
                         return false;
                     }
                 } else if(c.data.type == CardType::TREASURE && type == CardType::ACTION){
-                    cout << c.data.name << " is not an action card\n";
+                    if(*verbose)
+                        cout << c.data.name << " is not an action card\n";
                     return false;
                 } else if(c.data.type == CardType::VICTORY){
-                    cout << c.data.name << " is unplayable\n";
+                    if(*verbose)
+                        cout << c.data.name << " is unplayable\n";
                     return false;
                 }
                 // -------------- SUCCESSFUL PLAY --------------
@@ -742,9 +749,11 @@ protected:
         // card not found in hand. maybe it was a substring?
         string retry = FindCard(name, hand).data.name;
         if(retry != name){
-            return PlayCard(retry, type);
+            return PlayCard(retry, type, *verbose);
         }
-        cout << "No card with unambiguously matcing name found in hand\n";
+        if(*verbose){
+            cout << "No card with unambiguously matcing name found in hand\n";
+        }
         return false;
     }
 
@@ -854,7 +863,6 @@ protected:
     Handles clenup / end phase
     */
     void EndTurn(){
-        cout << "ending turn\n";
         MoveAllCards(hand, discardPile);
         MoveAllCards(playArea, discardPile);
         Draw(5);
@@ -1399,6 +1407,12 @@ public:
     {
         // bot specific stuff
     }
+
+    void TakeTurn() override{
+        cout << name << "'s turn\n";
+        Player::TakeTurn();
+    }
+
 protected:
     vector<CardId> playOrder{
         // non-terminal
@@ -1475,16 +1489,16 @@ protected:
 
     bool PlayNextCard(){
         for(CardId id : playOrder){
-            if(PlayCard(CardIdToName(id), CardType::ACTION))
+            if(PlayCard(CardIdToName(id), CardType::ACTION, false))
                 return true;
         }
         return false;
     }
 
     bool PlayPhase(bool isBuyPhase) override{
-        cout << "bot taking turn\n";
+        // cout << "bot taking turn\n";
         while(GameShouldContinue(*shop)){
-            cout << "claiming\n";
+            // cout << "claiming\n";
             ClaimAll();
 
             if(!isBuyPhase){
@@ -1492,10 +1506,10 @@ protected:
                 // move to buy phase
                 return true;
             } else {
-                cout << gold << "\n";
+                // cout << gold << "\n";
                 for(int i = 0; i < buys; i++){
                     for(CardId id : buyOrder){
-                        if(BuyCard(CardIdToName(id))){
+                        if(BuyCard(CardIdToName(id), false)){
                             break;
                         }
                     }
@@ -1578,8 +1592,8 @@ private:
 
     void Settings(){
         // TODO prompt player for settings
-        // playerCount = 1;
-        botCount = 2;
+        playerCount = 1;
+        botCount = 3;
     }
 
     /*
@@ -1660,7 +1674,7 @@ private:
     bool PlayRound(){
         for(auto * p : players){
             p->TakeTurn();
-            cout << "---------- Turn ended ----------\n";
+            cout << "\n---------- Turn ended ----------\n\n";
             if(!GameShouldContinue(shop)){
                 return false;
             }
