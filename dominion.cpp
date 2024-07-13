@@ -172,7 +172,7 @@ A card, containing data. Supports == operator.
 */
 class Card{
 public:
-    Card(CardId id) : data(defaultCardSet.cards[id]){} 
+    Card(CardId id) : data(defaultCardSet.cards[id]){}
     // should be const ? ? ? ?
     bool operator==(Card other) const {
         return other.data.id == data.id;
@@ -335,26 +335,28 @@ static const bool Confirm(){
     return (ResponseToTokens("")[0] == "y");
 }
 
+// !
+static const bool debug = true;
+
 /*
 Responsible for most actions in the game, like taking turns and playing cards.
 */
 class Player{
 public:
-    Player(string name, vector<vector<Card>>* shop, vector<Card>* trash, vector<Player>* allPlayers) : 
+    Player(string name, vector<vector<Card>>* shop, vector<Card>* trash, vector<Player>* allPlayers) :
         name(name),
-        shop(shop), 
-        trash(trash), 
+        shop(shop),
+        trash(trash),
         allPlayers(allPlayers),
-        gold(0), 
+        gold(0),
         autoClaim(true),
-        turnCount(0),
-        debug(0)
+        turnCount(0)
     {
         GainStartingCards();
         PopulateEffects();
         Draw(5);
     }
-    
+
     /*
     Resolve action, buy and end phases.
     TODO deliver allPlayers somewhere else
@@ -370,7 +372,7 @@ public:
             buys = 1;
             gold = 0;
         }
-        
+
         // action phase
         if(PlayPhase(false)){
             // buy phase - skipped if player wants to end their turn
@@ -426,6 +428,10 @@ public:
 
     void PrintScore(){
         // Raise NotImplementedError
+        cout << "- " << name << " -\n";
+        cout << "Score: " << Score() << "\n";
+        PrintDeck();
+        cout << "\n";
     }
 private:
     // ------------------------------------------------ MEMBER VARIABLES -------------------------------------------------------
@@ -443,9 +449,8 @@ private:
     size_t buys;
     map<CardId, bool (Player::*)()> cardEffects;
     bool autoClaim;
-    bool debug;
     size_t turnCount;
-    
+
     // ------------------------------------------------ SETUP -------------------------------------------------------
 
     /*
@@ -574,7 +579,7 @@ private:
             cout << "Play function not found\n";
         }
     }
-    
+
     /*
     Moves a (random) card with a matching id from one vector to another. If ID is not provided, moves top card.
     */
@@ -700,7 +705,7 @@ private:
     bool PlayCard(string name, CardType type){
         for(Card c : hand){
             if(StrLower(c.data.name) == StrLower(name)){
-                // -------------- FAIL CONDITIONS -------------- 
+                // -------------- FAIL CONDITIONS --------------
                 if(actions <= 0 && type == CardType::ACTION){
                     cout << "No actions remaining.\n";
                     return false;
@@ -717,7 +722,7 @@ private:
                     cout << c.data.name << " is unplayable\n";
                     return false;
                 }
-                // -------------- SUCCESSFUL PLAY -------------- 
+                // -------------- SUCCESSFUL PLAY --------------
                 if(c.data.type == CardType::ACTION){
                     actions--;
                 }
@@ -1264,7 +1269,7 @@ private:
                 }
             }
             break;
-        
+
         case CardId::SPY:
             if(drawPile.size() == 0){
                 ShuffleDiscardIntoDraw();
@@ -1287,7 +1292,7 @@ private:
                 selected.push_back(copy);
             }
             break;
-            
+
         case CardId::MILITIA:
             while(hand.size() > 3){
                 PrintHand();
@@ -1313,7 +1318,7 @@ private:
 
     /*
     Handles the attack portion, which is blockable by moat, of attack cards.
-    */ 
+    */
     bool Attack(CardId attackId){
         for(Player & p : *allPlayers){
             cout << "looking at " << p.name << "\n";
@@ -1423,12 +1428,12 @@ private:
     vector<Player> players;
     vector<vector<Card>> shop;
     vector<Card> trash;
-     
+
     /*
     Create players and shop.
     */
     void Setup(){
-        // I wonder if this can cause problems in the future if player goes out of scope or something 
+        // I wonder if this can cause problems in the future if player goes out of scope or something
         Player playerOne("Player One", &shop, &trash, &players);
         players.push_back(playerOne);
         Player playerTwo("Player Two", &shop, &trash, &players);
@@ -1436,8 +1441,9 @@ private:
 
         // create shop
         size_t victoryCount = players.size() > 2 ? 12 : 8;
-        // ! debug
-        // victoryCount = 1;
+        if(debug){
+            victoryCount = 1;
+        }
         size_t curseCount = players.size() > 1 ? (players.size() - 1) * 10 : 10;
         size_t copperCount = 60 - players.size() * 7;
 
@@ -1449,7 +1455,7 @@ private:
         AddShopStack(CardId::DUCHY, victoryCount);
         AddShopStack(CardId::PROVINCE, victoryCount);
         AddShopStack(CardId::CURSE, 20);
-        
+
         // 10 RANDOMLY SELECTED CARDS
         vector<CardId> selected{
             // 2
@@ -1510,10 +1516,9 @@ private:
     Print results.
     */
     void EndGame(){
-        cout << "Game has ended\n";
-        // TODO sort by score
+        cout << "\nGame finished\n";
         for(Player & p : players){
-            cout << p.GetName() << ": " << p.Score() << "\n";
+            p.PrintScore();
         }
     }
 
