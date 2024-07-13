@@ -347,7 +347,8 @@ public:
         allPlayers(allPlayers),
         gold(0), 
         autoClaim(true),
-        debug(0) 
+        turnCount(0),
+        debug(0)
     {
         GainStartingCards();
         PopulateEffects();
@@ -359,7 +360,7 @@ public:
     TODO deliver allPlayers somewhere else
     */
     void TakeTurn(){
-        // find a better place for delivering allPlayers?
+        turnCount++;
         if(debug){
             actions = 99;
             buys = 99;
@@ -422,6 +423,10 @@ public:
         }
         return total;
     }
+
+    void PrintScore(){
+        // Raise NotImplementedError
+    }
 private:
     // ------------------------------------------------ MEMBER VARIABLES -------------------------------------------------------
 
@@ -439,6 +444,7 @@ private:
     map<CardId, bool (Player::*)()> cardEffects;
     bool autoClaim;
     bool debug;
+    size_t turnCount;
     
     // ------------------------------------------------ SETUP -------------------------------------------------------
 
