@@ -1245,7 +1245,8 @@ protected:
         cout << name << " is attacked by " << CardIdToName(attackId) << "\n";
         cout << FindCard("Moat", hand).data.name << "\n";
         if(FindCard("Moat", hand).data.id != CardId::NO_ID){
-            cout << "Cancel attack with Moat? (y/n): ";
+            if(!autoResponse)
+                cout << "Cancel attack with Moat? (y/n): ";
             if(autoResponse || Confirm())
                 return selected;
         }
@@ -1318,12 +1319,72 @@ protected:
 
         case CardId::MILITIA:
             while(hand.size() > 3){
-                PrintHand();
-                cout << "Discard " << hand.size() - 3 << " cards (eg. est est pro): ";
-                response = ResponseToTokens("");
-                for(string s : response){
-                    if(Discard(FindCard(s, hand).data.id)){
-                        cout << name << " discarded " << s << "\n";
+                if(autoResponse){
+                    vector<CardId> discardOrder{
+                        // unplayable
+                        CardId::PROVINCE,
+                        CardId::DUCHY,
+                        CardId::GARDENS,
+                        CardId::ESTATE,
+                        CardId::CURSE,
+                        // 0
+                        CardId::COPPER,
+                        // 2
+                        CardId::MOAT,
+                        CardId::CELLAR,
+                        CardId::CHAPEL,
+                        // 3
+                        CardId::SILVER,
+                        CardId::CHANCELLOR,
+                        CardId::WOODCUTTER,
+                        CardId::VILLAGE,
+                        // 4
+                        CardId::BUREAUCRAT,
+                        CardId::SMITHY,
+                        CardId::MILITIA,
+                        CardId::MONEYLENDER,
+                        CardId::WORKSHOP,
+                        CardId::THRONE_ROOM,
+                        CardId::FEAST,
+                        CardId::SPY,
+                        CardId::THIEF,
+                        CardId::REMODEL,
+                        // 5
+                        CardId::LABORATORY,
+                        CardId::COUNCIL_ROOM,
+                        CardId::FESTIVAL,
+                        CardId::MARKET,
+                        CardId::WITCH,
+                        CardId::MINE,
+                        CardId::LIBRARY,
+                        // 6
+                        CardId::GOLD,
+                        CardId::ADVENTURER,
+                    };
+                    for(CardId id : discardOrder){
+                        for(int i = 0; i < hand.size() - 3; i++){
+                            if(hand.size() <= 3)
+                                break;
+                            string s = CardIdToName(id);
+                            cout << "looking for " << s << "\n";
+                            CardId id = FindCard(s, hand).data.id;
+                            if(id != CardId::NO_ID && Discard(id)){
+                                cout << name << " discarded " << s << "\n";
+                            }
+                        }
+                    }
+                } else {
+                    PrintHand();
+                    cout << "Discard " << hand.size() - 3 << " cards (eg. est est pro): ";
+                    response = ResponseToTokens("");
+                    for(string s : response){
+                        if(hand.size() <= 3){
+                            // can't discard too many cards
+                            break;
+                        }
+                        if(Discard(FindCard(s, hand).data.id)){
+                            cout << name << " discarded " << s << "\n";
+                        }
                     }
                 }
             }
@@ -1435,16 +1496,16 @@ protected:
         CardId::MARKET,
         CardId::FESTIVAL,
         // terminal
+        CardId::MILITIA,
         CardId::BUREAUCRAT,
         CardId::WITCH,
         CardId::COUNCIL_ROOM,
         CardId::SMITHY,
         CardId::CHANCELLOR,
         CardId::WOODCUTTER,
+        CardId::MOAT,
         // requires logic
         /*
-        CardId::MOAT,
-        CardId::MILITIA,
         CardId::CELLAR,
         CardId::MONEYLENDER,
         CardId::WORKSHOP,
@@ -1473,6 +1534,7 @@ protected:
         CardId::MARKET,
         CardId::WITCH,
         // 4
+        CardId::MILITIA,
         CardId::BUREAUCRAT,
         CardId::SMITHY,
         CardId::GARDENS,
@@ -1482,10 +1544,9 @@ protected:
         CardId::WOODCUTTER,
         CardId::VILLAGE,
         // 2
+        CardId::MOAT,
         // requires logic
         /*
-        CardId::MOAT,
-        CardId::MILITIA,
         CardId::MONEYLENDER,
         CardId::WORKSHOP,
         CardId::THRONE_ROOM,
