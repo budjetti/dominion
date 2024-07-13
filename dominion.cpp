@@ -336,14 +336,14 @@ static const bool Confirm(){
 }
 
 // !
-static const bool debug = true;
+static const bool debug = false;
 
 /*
 Responsible for most actions in the game, like taking turns and playing cards.
 */
 class Player{
 public:
-    Player(string name, vector<vector<Card>>* shop, vector<Card>* trash, vector<Player>* allPlayers) :
+    Player(string name, vector<vector<Card>>* shop, vector<Card>* trash, vector<Player*>* allPlayers) :
         name(name),
         shop(shop),
         trash(trash),
@@ -358,10 +358,17 @@ public:
     }
 
     /*
+    For people who are bad at names.
+    */
+    string GetName(){
+        return name;
+    }
+
+    /*
     Resolve action, buy and end phases.
     TODO deliver allPlayers somewhere else
     */
-    void TakeTurn(){
+    virtual void TakeTurn(){
         turnCount++;
         if(debug){
             actions = 99;
@@ -380,13 +387,6 @@ public:
         }
         // end phase
         EndTurn();
-    }
-
-    /*
-    For people who are bad at names.
-    */
-    string GetName(){
-        return name;
     }
 
     /*
@@ -430,10 +430,11 @@ public:
         // Raise NotImplementedError
         cout << "- " << name << " -\n";
         cout << "Score: " << Score() << "\n";
+        cout << "Turns: " << turnCount << "\n";
         PrintDeck();
         cout << "\n";
     }
-private:
+protected:
     // ------------------------------------------------ MEMBER VARIABLES -------------------------------------------------------
 
     vector<Card> hand;
@@ -442,7 +443,7 @@ private:
     vector<Card> playArea;
     vector<vector<Card>>* shop;
     vector<Card>* trash;
-    vector<Player>* allPlayers;
+    vector<Player*>* allPlayers;
     string name;
     size_t gold;
     size_t actions;
@@ -798,7 +799,7 @@ private:
     /*
     Handles player's action/buy phase. Returns true if buy phase should occur, false if it should be skipped.
     */
-    bool PlayPhase(bool isBuyPhase){
+    virtual bool PlayPhase(bool isBuyPhase){
         while(GameShouldContinue(*shop)){
             PrintStatus(true);
             cout << "[" << name << " - " << (isBuyPhase ? "buy" : "action") << "]: ";
@@ -853,6 +854,7 @@ private:
     Handles clenup / end phase
     */
     void EndTurn(){
+        cout << "ending turn\n";
         MoveAllCards(hand, discardPile);
         MoveAllCards(playArea, discardPile);
         Draw(5);
@@ -1217,9 +1219,9 @@ private:
     bool PlayCouncilRoom(){
         Draw(4);
         buys++;
-        for(Player & p : *allPlayers){
-            if(p.name != name){
-                p.Draw(1);
+        for(Player * p : *allPlayers){
+            if(p->name != name){
+                p->Draw(1);
             }
         }
         return true;
@@ -1320,34 +1322,34 @@ private:
     Handles the attack portion, which is blockable by moat, of attack cards.
     */
     bool Attack(CardId attackId){
-        for(Player & p : *allPlayers){
-            cout << "looking at " << p.name << "\n";
+        for(Player * p : *allPlayers){
+            cout << "looking at " << p->name << "\n";
             // Spy also targets self
-            if(p.name != name || attackId == CardId::SPY){
-                vector<Card> selected = p.AttackResponse(attackId);
+            if(p->name != name || attackId == CardId::SPY){
+                vector<Card> selected = p->AttackResponse(attackId);
 
                 // Thief needs a response
                 if(attackId == CardId::THIEF){
-                    cout << p.name << " revealed: ";
+                    cout << p->name << " revealed: ";
                     PrintCardVector(selected);
                     for(Card c : selected){
                         if(c.data.type == CardType::TREASURE){
                             cout << "Steal " << c.data.name << "? (y/n): ";
                             if(Confirm()){
-                                p.Trash(c.data.id, true);
+                                p->Trash(c.data.id, true);
                                 GainCard(c.data.name);
-                                cout << "Stole " << c.data.name << " from " << p.name << "\n";
+                                cout << "Stole " << c.data.name << " from " << p->name << "\n";
                                 break;
                             }
                         }
                     }
                 } else if(attackId == CardId::SPY){
                     if(selected.size() == 0){
-                        cout << p.name << " has no cards to reveal\n";
+                        cout << p->name << " has no cards to reveal\n";
                     } else {
-                        cout << "Make " << p.name << " discard " << selected[0].data.name << "? (y/n): ";
+                        cout << "Make " << p->name << " discard " << selected[0].data.name << "? (y/n): ";
                         if(Confirm()){
-                            p.MoveCard(p.drawPile, p.discardPile);
+                            p->MoveCard(p->drawPile, p->discardPile);
                         }
                     }
                 }
@@ -1391,12 +1393,51 @@ private:
     }
 };
 
+class Bot : public Player{
+public:
+    Bot(string name, vector<vector<Card>>* shop, vector<Card>* trash, vector<Player*>* allPlayers) :
+        Player(name, shop, trash, allPlayers)
+    {
+        // bot specific stuff
+    }
+protected:
+    bool PlayPhase(bool isBuyPhase) override{
+        cout << "bot taking turn\n";
+        while(GameShouldContinue(*shop)){
+            cout << "claiming\n";
+            ClaimAll();
+
+            if(!isBuyPhase){
+                // move to buy phase
+                return true;
+            } else {
+                cout << gold << "\n";
+                for(int i = 0; i < buys; i++){
+                    if(gold >= 8){
+                        BuyCard("Province");
+                        continue;
+                    }
+                    else if(gold >= 6){
+                        BuyCard("Gold");
+                        continue;
+                    }
+                    else if(gold >= 3){
+                        BuyCard("Silver");
+                        continue;
+                    }
+                }
+                return true;
+            }
+        }
+        return true;
+    }
+};
+
 /*
 Used for sorting shop stacks.
 */
 static const bool GreaterCost(CardId a, CardId b){
-    Card first(a);
-    Card second(b);
+    Card first(a); Card second(b);
     return first.data.cost < second.data.cost;
 }
 
@@ -1405,7 +1446,7 @@ Starts, advances and ends game. Tells players when to take their turns. Handles 
 */
 class Game{
 public:
-    Game(){}
+    Game() : playerCount(0), botCount(0){}
 
     /*
     Spela dataspel.
@@ -1413,7 +1454,10 @@ public:
     void Start(){
         // TODO setup options
 
-        // Set up game
+        // Set player/bot count
+        Settings();
+
+        // Set up game according to settings
         Setup();
 
         // Play until game end condition have been met
@@ -1423,21 +1467,59 @@ public:
         EndGame();
     }
 
+    ~Game(){
+        // delete players?
+    }
+
 private:
+
     // Member variables
-    vector<Player> players;
+    vector<Player*> players;
     vector<vector<Card>> shop;
     vector<Card> trash;
+    size_t playerCount;
+    size_t botCount;
+
+    /*
+    Creates shop stack. TODO add a dedicated shop stack class?
+    */
+    void AddShopStack(CardId id, int count){
+        vector<Card> cards;
+        for(size_t i = 0; i < count; i++){
+            Card card(id);
+            cards.push_back(card);
+        }
+        shop.push_back(cards);
+    }
+
+    void CreatePlayer(string name, bool isBot){
+        if(isBot){
+            Bot * bot = new Bot(name, &shop, &trash, &players);
+            players.push_back(bot);
+        } else {
+            Player * player = new Player(name, &shop, &trash, &players);
+            players.push_back(player);
+        }
+    }
+
+    void Settings(){
+        // TODO prompt player for settings
+        playerCount = 1;
+        botCount = 1;
+    }
 
     /*
     Create players and shop.
     */
     void Setup(){
-        // I wonder if this can cause problems in the future if player goes out of scope or something
-        Player playerOne("Player One", &shop, &trash, &players);
-        players.push_back(playerOne);
-        Player playerTwo("Player Two", &shop, &trash, &players);
-        players.push_back(playerTwo);
+        vector<string> playerNames{"Player One", "Player Two", "Player Three", "Player Four"};
+        for(int i = 0; i < playerCount; i++){
+            CreatePlayer(playerNames[i], false);
+        }
+        vector<string> botNames{"Bot One", "Bot Two", "Bot Three", "Bot Four"};
+        for(int i = 0; i < botCount; i++){
+            CreatePlayer(botNames[i], true);
+        }
 
         // create shop
         size_t victoryCount = players.size() > 2 ? 12 : 8;
@@ -1502,8 +1584,8 @@ private:
     Lets each player take a turn. Returns false if game should end.
     */
     bool PlayRound(){
-        for(Player & p : players){
-            p.TakeTurn();
+        for(auto * p : players){
+            p->TakeTurn();
             cout << "---------- Turn ended ----------\n";
             if(!GameShouldContinue(shop)){
                 return false;
@@ -1517,21 +1599,9 @@ private:
     */
     void EndGame(){
         cout << "\nGame finished\n";
-        for(Player & p : players){
-            p.PrintScore();
+        for(Player * p : players){
+            p->PrintScore();
         }
-    }
-
-    /*
-    Creates shop stack. TODO add a dedicated shop stack class?
-    */
-    void AddShopStack(CardId id, int count){
-        vector<Card> cards;
-        for(size_t i = 0; i < count; i++){
-            Card card(id);
-            cards.push_back(card);
-        }
-        shop.push_back(cards);
     }
 };
 
