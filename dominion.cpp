@@ -1229,7 +1229,6 @@ protected:
 
     // ACTION - ATTACK
 
-    // Returns vector<Card> because of thief. Definitely needs reworking if more attacks are added.
     vector<Card> AttackResponse(CardId attackId){
         vector<Card> selected;
 
@@ -1401,6 +1400,87 @@ public:
         // bot specific stuff
     }
 protected:
+    vector<CardId> playOrder{
+        // non-terminal
+        CardId::LABORATORY,
+        CardId::VILLAGE,
+        CardId::MARKET,
+        CardId::FESTIVAL,
+        // terminal
+        CardId::WITCH,
+        CardId::COUNCIL_ROOM,
+        CardId::SMITHY,
+        CardId::CHANCELLOR,
+        CardId::WOODCUTTER,
+        // requires logic
+        /*
+        CardId::MOAT,
+        CardId::BUREAUCRAT,
+        CardId::MILITIA,
+        CardId::CELLAR,
+        CardId::MONEYLENDER,
+        CardId::WORKSHOP,
+        CardId::THRONE_ROOM,
+        CardId::CHAPEL,
+        CardId::FEAST,
+        CardId::SPY,
+        CardId::THIEF,
+        CardId::REMODEL,
+        CardId::MINE,
+        CardId::LIBRARY,
+        CardId::ADVENTURER,
+        */
+    };
+
+    vector<CardId> buyOrder{
+        // 8
+        CardId::PROVINCE,
+        // 6
+        CardId::GOLD,
+        // 5
+        CardId::DUCHY,
+        CardId::COUNCIL_ROOM,
+        CardId::LABORATORY,
+        CardId::FESTIVAL,
+        CardId::MARKET,
+        CardId::WITCH,
+        // 4
+        CardId::SMITHY,
+        CardId::GARDENS,
+        // 3
+        CardId::SILVER,
+        CardId::CHANCELLOR,
+        CardId::WOODCUTTER,
+        CardId::VILLAGE,
+        // 2
+        // requires logic
+        /*
+        CardId::MOAT,
+        CardId::BUREAUCRAT,
+        CardId::MILITIA,
+        CardId::MONEYLENDER,
+        CardId::WORKSHOP,
+        CardId::THRONE_ROOM,
+        CardId::CHAPEL,
+        CardId::FEAST,
+        CardId::SPY,
+        CardId::THIEF,
+        CardId::REMODEL,
+        CardId::MINE,
+        CardId::LIBRARY,
+        CardId::ADVENTURER,
+        CardId::CELLAR,
+        */
+    };
+
+    bool PlayNextCard(){
+        for(CardId id : playOrder){
+            if(PlayCard(CardIdToName(id), CardType::ACTION))
+                return true;
+        }
+        return false;
+    }
+
     bool PlayPhase(bool isBuyPhase) override{
         cout << "bot taking turn\n";
         while(GameShouldContinue(*shop)){
@@ -1408,22 +1488,16 @@ protected:
             ClaimAll();
 
             if(!isBuyPhase){
+                while(PlayNextCard());
                 // move to buy phase
                 return true;
             } else {
                 cout << gold << "\n";
                 for(int i = 0; i < buys; i++){
-                    if(gold >= 8){
-                        BuyCard("Province");
-                        continue;
-                    }
-                    else if(gold >= 6){
-                        BuyCard("Gold");
-                        continue;
-                    }
-                    else if(gold >= 3){
-                        BuyCard("Silver");
-                        continue;
+                    for(CardId id : buyOrder){
+                        if(BuyCard(CardIdToName(id))){
+                            break;
+                        }
                     }
                 }
                 return true;
@@ -1504,8 +1578,8 @@ private:
 
     void Settings(){
         // TODO prompt player for settings
-        playerCount = 1;
-        botCount = 1;
+        // playerCount = 1;
+        botCount = 2;
     }
 
     /*
