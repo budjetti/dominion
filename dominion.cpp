@@ -350,7 +350,8 @@ public:
         allPlayers(allPlayers),
         gold(0),
         autoClaim(true),
-        turnCount(0)
+        turnCount(0),
+        autoResponse(false)
     {
         GainStartingCards();
         PopulateEffects();
@@ -451,6 +452,7 @@ protected:
     map<CardId, bool (Player::*)()> cardEffects;
     bool autoClaim;
     size_t turnCount;
+    bool autoResponse; // mainly for bots
 
     // ------------------------------------------------ SETUP -------------------------------------------------------
 
@@ -1244,7 +1246,7 @@ protected:
         cout << FindCard("Moat", hand).data.name << "\n";
         if(FindCard("Moat", hand).data.id != CardId::NO_ID){
             cout << "Cancel attack with Moat? (y/n): ";
-            if(Confirm())
+            if(autoResponse || Confirm())
                 return selected;
         }
 
@@ -1270,6 +1272,18 @@ protected:
             cout << "Victory cards in hand: ";
             PrintCardVector(victoryCards);
             while(1){
+                if(autoResponse){
+                    vector<string> victoryCards{"Province", "Duchy", "Gardens", "Estate"};
+                    for(string s : victoryCards){
+                        Card c = FindCard(s, hand).data.id;
+                        if(c.data.id != CardId::NO_ID){
+                            MoveCard(hand, drawPile, c.data.id);
+                            return selected;
+                        }
+                    }
+                    cout << "Something went wrong\n";
+                    return selected;
+                }
                 response = ResponseToTokens("Choose card to put on top (eg. estate / es): ");
                 Card card = FindCard(response[0], hand);
                 if(card.data.type == CardType::VICTORY){
@@ -1405,7 +1419,7 @@ public:
     Bot(string name, vector<vector<Card>>* shop, vector<Card>* trash, vector<Player*>* allPlayers) :
         Player(name, shop, trash, allPlayers)
     {
-        // bot specific stuff
+        autoResponse = true;
     }
 
     void TakeTurn() override{
@@ -1421,6 +1435,7 @@ protected:
         CardId::MARKET,
         CardId::FESTIVAL,
         // terminal
+        CardId::BUREAUCRAT,
         CardId::WITCH,
         CardId::COUNCIL_ROOM,
         CardId::SMITHY,
@@ -1429,7 +1444,6 @@ protected:
         // requires logic
         /*
         CardId::MOAT,
-        CardId::BUREAUCRAT,
         CardId::MILITIA,
         CardId::CELLAR,
         CardId::MONEYLENDER,
@@ -1459,6 +1473,7 @@ protected:
         CardId::MARKET,
         CardId::WITCH,
         // 4
+        CardId::BUREAUCRAT,
         CardId::SMITHY,
         CardId::GARDENS,
         // 3
@@ -1470,7 +1485,6 @@ protected:
         // requires logic
         /*
         CardId::MOAT,
-        CardId::BUREAUCRAT,
         CardId::MILITIA,
         CardId::MONEYLENDER,
         CardId::WORKSHOP,
@@ -1686,7 +1700,7 @@ private:
     Print results.
     */
     void EndGame(){
-        cout << "\nGame finished\n";
+        cout << "\nGame finished \n";
         for(Player * p : players){
             p->PrintScore();
         }
