@@ -792,6 +792,9 @@ protected:
         } else if(tokens[0] == "help" || tokens[0] == "h"){
             PrintHelp();
             return true;
+        } else if(tokens[0] == "rules" || tokens[0] == "r"){
+            PrintRules();
+            return true;
         }
         return false;
     }
@@ -957,7 +960,7 @@ protected:
         cout << "\n";
         cout << "https://github.com/budjetti/dominion\n";
         cout << "Type 'help' or 'h' to see the list of commands.\n";
-        cout << "Type 'help name' or 'h name' to find more about name\n";
+        // cout << "Type 'help name' or 'h name' to find more about name\n";
         cout << "[lowercase] arguments are optional. [UPPERCASE] are mandatory.\n";
         cout << "\n";
         cout << "COMMAND\t\t\t\tEXAMPLE USAGE\n";
@@ -968,8 +971,25 @@ protected:
         cout << "(e)nd\t\t\t\tend / e\n";
         cout << "(h)elp [command]\t\thelp / h / h buy\n";
         cout << "(p)lay [NAME]\t\t\tplay smithy / p smi\n";
+        cout << "(r)ules\t\t\t\trules / r\n";
         cout << "(s)hop\t\t\t\tshop / s\n";
         cout << "\n";
+    }
+    void PrintRules(){
+        cout << "---------------- RULES ---------------\n";
+        cout << "\n";
+        cout << "This is a quick summary of the rules, based on https://wiki.dominionstrategy.com/index.php/Gameplay\n";
+        cout << "\n";
+        cout << "In a game of Dominion, each player is given a starting deck of 10 cards, and they play around a Supply of card piles that they can buy from over the course of the game.\n\n";
+        cout << "On their turn, a player goes through three turn phases:\n\n";
+        cout << " - Action: They may play one Action card.\n";
+        cout << " - Buy: They may play (claim) their Treasure cards and buy one card that they can afford, putting that card in their discard pile.\n";
+        cout << " - Clean-up: They take all the cards they've played, and all cards remaining in their hand, and put them into their discard pile. They then draw 5 more cards, and end their turn.\n\n";
+        cout << "When any player needs to draw cards and there are not enough cards left in their deck (draw pile) to do so, they reshuffle their discard pile to create a new deck. In this way cards that have been bought on earlier turns will be drawn on later turns to be played.\n\n";
+        cout << "The game ends when either 3 Supply piles are empty, or when the Province pile empties. The player with the most victory points wins.\n\n";
+        cout << "Many effects can allow the player to play more than one Action card or buy more than one card per turn. There are exceptions to almost nverything else just listed above as well.\n";
+        cout << "\n";
+        cout << "--------------------------------------\n";
     }
 
     // ------------------------------------------------ PLAY -------------------------------------------------------
@@ -1266,7 +1286,7 @@ protected:
         vector<Card> selected;
 
         cout << name << " is attacked by " << CardIdToName(attackId) << "\n";
-        cout << FindCard("Moat", hand).data.name << "\n";
+        // cout << FindCard("Moat", hand).data.name << "\n";
         if(FindCard("Moat", hand).data.id != CardId::NO_ID){
             if(!autoResponse)
                 cout << "Cancel attack with Moat? (y/n): ";
@@ -1428,7 +1448,7 @@ protected:
     */
     bool Attack(CardId attackId){
         for(Player * p : *allPlayers){
-            cout << "looking at " << p->name << "\n";
+            // cout << "looking at " << p->name << "\n";
             // Spy also targets self
             if(p->name != name || attackId == CardId::SPY){
                 vector<Card> selected = p->AttackResponse(attackId);
