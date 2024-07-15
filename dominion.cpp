@@ -428,7 +428,6 @@ public:
     }
 
     void PrintScore(){
-        // Raise NotImplementedError
         cout << "- " << name << " -\n";
         cout << "Score: " << Score() << "\n";
         cout << "Turns: " << turnCount << "\n";
@@ -776,7 +775,7 @@ protected:
         } else if(tokens[0] == "discard" || tokens[0] == "di"){
             PrintDiscard();
             return true;
-        } else if(tokens[0] == "hand" || tokens[0] == "h"){
+        } else if(tokens[0] == "hand" || tokens[0] == "ha"){
             PrintHand();
             return true;
         } else if(tokens[0] == "played" || tokens[0] == "pd"){
@@ -787,6 +786,9 @@ protected:
             return true;
         } else if(tokens[0] == "autoclaim" || tokens[0] == "ac"){
             ToggleAutoClaim(tokens.size() > 1 ? tokens[1] : "");
+            return true;
+        } else if(tokens[0] == "help" || tokens[0] == "h"){
+            PrintHelp();
             return true;
         }
         return false;
@@ -947,6 +949,22 @@ protected:
             }
         }
         cout << "--------------------------\n";
+    }
+    void PrintHelp(){
+        cout << "\n";
+        cout << "https://github.com/budjetti/dominion\n";
+        cout << "Type 'help' to see the list of commands.\n";
+        cout << "Type 'help [command]' to find more about [command]\n";
+        cout << "\n";
+        cout << "COMMAND\t\t\t\tEXAMPLE USAGE\n";
+        cout << "(a)uto(c)laim [off/on]\t\tautoclaim on / ac\n";
+        cout << "(b)uy [name]\t\t\tbuy copper / b cop\n";
+        cout << "(c)laim\t\t\t\tclaim / c\n";
+        cout << "(d)eck\t\t\t\tdeck / d\n";
+        cout << "(e)nd\t\t\t\tend / e\n";
+        cout << "(p)lay [name]\t\t\tplay smithy / p smi\n";
+        cout << "(s)hop\t\t\t\tshop / s\n";
+        cout << "\n";
     }
 
     // ------------------------------------------------ PLAY -------------------------------------------------------
