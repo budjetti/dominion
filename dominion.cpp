@@ -101,12 +101,13 @@ contain instructions on how to resolve the cards effect. That is handled by the 
 */
 class CardData{
 public:
-    CardData(CardId _id, CardType _type, string _name, size_t _cost) : id(_id), type(_type), name(_name), cost(_cost){}
-    CardData() : CardData(CardId::NO_ID, CardType::NO_TYPE, "No Name", 0){}
+    CardData(CardId _id, CardType _type, string _name, size_t _cost, string _description) : id(_id), type(_type), name(_name), cost(_cost), description(_description){}
+    CardData() : CardData(CardId::NO_ID, CardType::NO_TYPE, "No Name", 0, "No Description"){}
     CardId id;
     CardType type;
     string name;
     size_t cost;
+    string description;
 };
 
 /*
@@ -119,45 +120,46 @@ public:
         // 1st EDITION CARDS (DEFAULT)
 
         // TREASURE
-        cards[CardId::COPPER] = CardData(CardId::COPPER, CardType::TREASURE, "Copper", 0);
-        cards[CardId::SILVER] = CardData(CardId::SILVER, CardType::TREASURE, "Silver", 3);
-        cards[CardId::GOLD] = CardData(CardId::GOLD, CardType::TREASURE, "Gold", 6);
+        cards[CardId::COPPER] = CardData(CardId::COPPER, CardType::TREASURE, "Copper", 0, "+1 Coin.");
+        cards[CardId::SILVER] = CardData(CardId::SILVER, CardType::TREASURE, "Silver", 3, "+2 Coins.");
+        cards[CardId::GOLD] = CardData(CardId::GOLD, CardType::TREASURE, "Gold", 6, "+3 Coins.");
         // VICTORY
-        cards[CardId::ESTATE] = CardData(CardId::ESTATE, CardType::VICTORY, "Estate", 2);
-        cards[CardId::DUCHY] = CardData(CardId::DUCHY, CardType::VICTORY, "Duchy", 5);
-        cards[CardId::PROVINCE] = CardData(CardId::PROVINCE, CardType::VICTORY, "Province", 8);
-        cards[CardId::GARDENS] = CardData(CardId::GARDENS, CardType::VICTORY, "Gardens", 4);
+        cards[CardId::ESTATE] = CardData(CardId::ESTATE, CardType::VICTORY, "Estate", 2, "Worth 1 victory point.");
+        cards[CardId::DUCHY] = CardData(CardId::DUCHY, CardType::VICTORY, "Duchy", 5, "Worth 3 victory points.");
+        cards[CardId::PROVINCE] = CardData(CardId::PROVINCE, CardType::VICTORY, "Province", 8, "Worth 6 victory points.");
+        cards[CardId::GARDENS] = CardData(CardId::GARDENS, CardType::VICTORY, "Gardens", 4, "Worth 1 victory point per 10 cards you have (round down).");
         // CURSE
-        cards[CardId::CURSE] = CardData(CardId::CURSE, CardType::CURSE, "Curse", 0);
+        cards[CardId::CURSE] = CardData(CardId::CURSE, CardType::CURSE, "Curse", 0, "Worth -1 victory point.");
         // ACTION
-        cards[CardId::CELLAR] = CardData(CardId::CELLAR, CardType::ACTION, "Cellar", 2);
-        cards[CardId::CHAPEL] = CardData(CardId::CHAPEL, CardType::ACTION, "Chapel", 2);
-        cards[CardId::CHANCELLOR] = CardData(CardId::CHANCELLOR, CardType::ACTION, "Chancellor", 3);
-        cards[CardId::VILLAGE] = CardData(CardId::VILLAGE, CardType::ACTION, "Village", 3);
-        cards[CardId::WOODCUTTER] = CardData(CardId::WOODCUTTER, CardType::ACTION, "Woodcutter", 3);
-        cards[CardId::WORKSHOP] = CardData(CardId::WORKSHOP, CardType::ACTION, "Workshop", 3);
-        cards[CardId::FEAST] = CardData(CardId::FEAST, CardType::ACTION, "Feast", 4);
-        cards[CardId::MONEYLENDER] = CardData(CardId::MONEYLENDER, CardType::ACTION, "Moneylender", 4);
-        cards[CardId::REMODEL] = CardData(CardId::REMODEL, CardType::ACTION, "Remodel", 4);
-        cards[CardId::SMITHY] = CardData(CardId::SMITHY, CardType::ACTION, "Smithy", 4);
-        cards[CardId::THRONE_ROOM] = CardData(CardId::THRONE_ROOM, CardType::ACTION, "Throne Room", 4);
-        cards[CardId::FESTIVAL] = CardData(CardId::FESTIVAL, CardType::ACTION, "Festival", 5);
-        cards[CardId::COUNCIL_ROOM] = CardData(CardId::COUNCIL_ROOM, CardType::ACTION, "Council Room", 5);
-        cards[CardId::MARKET] = CardData(CardId::MARKET, CardType::ACTION, "Market", 5);
-        cards[CardId::LABORATORY] = CardData(CardId::LABORATORY, CardType::ACTION, "Laboratory", 5);
-        cards[CardId::LIBRARY] = CardData(CardId::LIBRARY, CardType::ACTION, "Library", 5);
-        cards[CardId::MINE] = CardData(CardId::MINE, CardType::ACTION, "Mine", 5);
-        cards[CardId::ADVENTURER] = CardData(CardId::ADVENTURER, CardType::ACTION, "Adventurer", 6);
+        cards[CardId::CELLAR] = CardData(CardId::CELLAR, CardType::ACTION, "Cellar", 2, "+1 Action. Discard any number of cards, then draw that many.");
+        cards[CardId::CHAPEL] = CardData(CardId::CHAPEL, CardType::ACTION, "Chapel", 2, "Trash up to 4 cards from your hand.");
+        cards[CardId::CHANCELLOR] = CardData(CardId::CHANCELLOR, CardType::ACTION, "Chancellor", 3, "+2 Coins. You may immediately put your deck into your discard pile.");
+        cards[CardId::VILLAGE] = CardData(CardId::VILLAGE, CardType::ACTION, "Village", 3, "+1 Card. +2 Actions.");
+        cards[CardId::WOODCUTTER] = CardData(CardId::WOODCUTTER, CardType::ACTION, "Woodcutter", 3, "+2 Coins. +1 Buy.");
+        cards[CardId::WORKSHOP] = CardData(CardId::WORKSHOP, CardType::ACTION, "Workshop", 3, "Gain a card costing up to 4 coins.");
+        cards[CardId::FEAST] = CardData(CardId::FEAST, CardType::ACTION, "Feast", 4, "Trash this card. Gain a card costing up to 5 Coins.");
+        cards[CardId::MONEYLENDER] = CardData(CardId::MONEYLENDER, CardType::ACTION, "Moneylender", 4, "You may trash a Copper from your hand for +3 Coins.");
+        cards[CardId::REMODEL] = CardData(CardId::REMODEL, CardType::ACTION, "Remodel", 4, "Trash a card from your hand. Gain a card costing up to 2 coins more than it.");
+        cards[CardId::SMITHY] = CardData(CardId::SMITHY, CardType::ACTION, "Smithy", 4, "+3 Cards.");
+        cards[CardId::THRONE_ROOM] = CardData(CardId::THRONE_ROOM, CardType::ACTION, "Throne Room", 4, "You may play an action card from your hand twice.");
+        cards[CardId::FESTIVAL] = CardData(CardId::FESTIVAL, CardType::ACTION, "Festival", 5, "+2 Actions. +1 Buy. +2 Coins.");
+        cards[CardId::COUNCIL_ROOM] = CardData(CardId::COUNCIL_ROOM, CardType::ACTION, "Council Room", 5, "+4 Cards. +1 Buy. Each other player draws a card.");
+        cards[CardId::MARKET] = CardData(CardId::MARKET, CardType::ACTION, "Market", 5, "+1 Card. +1 Action. +1 Buy. +1 Coin.");
+        cards[CardId::LABORATORY] = CardData(CardId::LABORATORY, CardType::ACTION, "Laboratory", 5, "+2 Cards. +1 Action.");
+        cards[CardId::LIBRARY] = CardData(CardId::LIBRARY, CardType::ACTION, "Library", 5, "Draw until you have 7 cards in hand, skipping any Action cards you choose to; set those aside, discarding them afterwards.");
+        cards[CardId::MINE] = CardData(CardId::MINE, CardType::ACTION, "Mine", 5, "You may trash a Treasure from your hand. Gain a Treasure to your hand costing up to 3 Coins more than it.");
+        cards[CardId::ADVENTURER] = CardData(CardId::ADVENTURER, CardType::ACTION, "Adventurer", 6, "Reveal cards from your deck until you reveal 2 Treasure cards. Put those Treasure cards into your hand and discard the other revealed cards.");
         // ACTION - REACTION
-        cards[CardId::MOAT] = CardData(CardId::MOAT, CardType::ACTION, "Moat", 2);
+        cards[CardId::MOAT] = CardData(CardId::MOAT, CardType::ACTION, "Moat", 2, "+2 Cards. | When another player plays an attack cards, you may first reveal this from your hand, to be unaffected by it.");
         // ACTION - ATTACK
-        cards[CardId::BUREAUCRAT] = CardData(CardId::BUREAUCRAT, CardType::ACTION, "Bureaucrat", 4);
-        cards[CardId::MILITIA] = CardData(CardId::MILITIA, CardType::ACTION, "Militia", 4);
-        cards[CardId::SPY] = CardData(CardId::SPY, CardType::ACTION, "Spy", 4);
-        cards[CardId::THIEF] = CardData(CardId::THIEF, CardType::ACTION, "Thief", 4);
-        cards[CardId::WITCH] = CardData(CardId::WITCH, CardType::ACTION, "Witch", 5);
+        cards[CardId::BUREAUCRAT] = CardData(CardId::BUREAUCRAT, CardType::ACTION, "Bureaucrat", 4, "Gain a Silver onto your deck. Each other player reveals a Victory cards from their hand and puts it onto their deck (or reveals a hand with no Victory cards).");
+        cards[CardId::MILITIA] = CardData(CardId::MILITIA, CardType::ACTION, "Militia", 4, "+2 Coins. Each other player discards down to 3 cards in hand.");
+        cards[CardId::SPY] = CardData(CardId::SPY, CardType::ACTION, "Spy", 4, "+1 Card. +1 Action. Each player (including you) reveals the top card of their deck and either discards it or puts it back, your choice.");
+        cards[CardId::THIEF] = CardData(CardId::THIEF, CardType::ACTION, "Thief", 4, "Each other player reveals the top 2 cards of their deck. If they reveal any Treasure cards, they trash one of them that you choose. You may gain any or all of these trashed cards. They discard the other revealed cards.");
+
+        cards[CardId::WITCH] = CardData(CardId::WITCH, CardType::ACTION, "Witch", 5, "+2 Cards. Each other player gains a curse.");
         // NONE
-        cards[CardId::NO_ID] = CardData(CardId::NO_ID, CardType::NO_TYPE, "No Name", 0);
+        cards[CardId::NO_ID] = CardData(CardId::NO_ID, CardType::NO_TYPE, "No Name", 0, "No Description");
 
         // TODO include 2nd edition?
     }
@@ -935,7 +937,8 @@ protected:
     }
     void PrintShop(){
         CardType lastType = CardType::TREASURE;
-        cout << "---------- SHOP ----------\n";
+        cout << "---------------- SHOP ----------------\n";
+        cout << "CT  NAME   COST         DESCRIPTION\n";
         for(auto shopStack : *shop){
             if(shopStack.size() == 0){
                 cout << "Empty\n";
@@ -945,24 +948,26 @@ protected:
                     cout << "\n";
                     lastType = data.type;
                 }
-                cout << shopStack.size() << "x " << data.name << " (" << data.cost << ")\n";
+                cout << shopStack.size() << "x " << data.name << " (" << data.cost << ")\t" << (data.name.length() <= 7 ? "\t" : "") << data.description << "\n";
             }
         }
-        cout << "--------------------------\n";
+        cout << "--------------------------------------\n";
     }
     void PrintHelp(){
         cout << "\n";
         cout << "https://github.com/budjetti/dominion\n";
-        cout << "Type 'help' to see the list of commands.\n";
-        cout << "Type 'help [command]' to find more about [command]\n";
+        cout << "Type 'help' or 'h' to see the list of commands.\n";
+        cout << "Type 'help name' or 'h name' to find more about name\n";
+        cout << "[lowercase] arguments are optional. [UPPERCASE] are mandatory.\n";
         cout << "\n";
         cout << "COMMAND\t\t\t\tEXAMPLE USAGE\n";
-        cout << "(a)uto(c)laim [off/on]\t\tautoclaim on / ac\n";
-        cout << "(b)uy [name]\t\t\tbuy copper / b cop\n";
+        cout << "(a)uto(c)laim [off/on]\t\tautoclaim on / ac off / ac\n";
+        cout << "(b)uy [NAME]\t\t\tbuy copper / b cop\n";
         cout << "(c)laim\t\t\t\tclaim / c\n";
         cout << "(d)eck\t\t\t\tdeck / d\n";
         cout << "(e)nd\t\t\t\tend / e\n";
-        cout << "(p)lay [name]\t\t\tplay smithy / p smi\n";
+        cout << "(h)elp [command]\t\thelp / h / h buy\n";
+        cout << "(p)lay [NAME]\t\t\tplay smithy / p smi\n";
         cout << "(s)hop\t\t\t\tshop / s\n";
         cout << "\n";
     }
