@@ -1783,9 +1783,8 @@ private:
         GetCount("Enter player count", playerCount, 4);
         int maxBots = 4 - playerCount;
         GetCount("Enter bot count", botCount, maxBots);
-        cout << "\n";
-        cout << "------------------- START GAME -------------------\n";
-        cout << "\n";
+        // cout << "\n";
+        // cout << "---------- START GAME ----------\n";
     }
 
     /*
@@ -1864,9 +1863,13 @@ private:
     Lets each player take a turn. Returns false if game should end.
     */
     bool PlayRound(){
+        if(players.size() == 0)
+            return false;
+
         for(auto * p : players){
+            cout << "\n---------- " << p->GetName() <<  "'s Turn ---------\n\n";
             p->TakeTurn();
-            cout << "\n---------- Turn ended ----------\n\n";
+            // cout << "\n---------- Turn ended ----------\n\n";
             if(!GameShouldContinue(shop)){
                 return false;
             }
@@ -1878,7 +1881,8 @@ private:
     Print results.
     */
     void EndGame(){
-        cout << "\nGame finished \n";
+        // cout << "\nGame finished \n";
+        cout << "\n---------- GAME FINISHED --------\n\n";
         for(Player * p : players){
             p->PrintScore();
         }
