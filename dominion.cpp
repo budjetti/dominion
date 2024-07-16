@@ -1,5 +1,5 @@
 /*
-FOSS command line adaptation of Dominion (2008) written in pure c++
+FOSS command line adaptation of Dominion (2008) written in c++
 
 This is a hobby project. I am not affiliated with Rio Grande Games and I do not intend to
 make money with this project.
@@ -11,11 +11,6 @@ https://wiki.dominionstrategy.com/index.php/Dominion_(Base_Set)
 
 Repo: github.com/budjetti/dominion
 Author: budjetti
-*/
-
-/*
-ISSUES / TODO
-Segfault when giving bad input to Militia response
 */
 
 #include <iostream>
@@ -1629,6 +1624,13 @@ protected:
         return (ProvinceCount() <= 4 || EmptySupplyPileCount(*shop) >= 2);
     }
 
+    const int RandInt(int min, int max){
+        unsigned seed = chrono::system_clock::now().time_since_epoch().count();
+        mt19937 generator(seed);
+        uniform_int_distribution<int> distribution(min, max);
+        return distribution(generator);
+    }
+
     bool PlayPhase(bool isBuyPhase) override{
         // cout << "bot taking turn\n";
         while(GameShouldContinue(*shop)){
@@ -1657,15 +1659,17 @@ protected:
                             if(BuyCard("Duchy", false)){
                                 break;
                             }
+                        } else if(data.id == CardId::SILVER){
+                            // buy silver 8/9 times
+                            if(RandInt(1,3) != 1){
+                                if(BuyCard("Silver", false)){
+                                    break;
+                                }
+                            }
                         }
 
-                        unsigned seed = chrono::system_clock::now().time_since_epoch().count();
-                        mt19937 generator(seed);
-                        uniform_int_distribution<int> distribution(1,3);
-                        int r = distribution(generator);
-                        if(r == 1){
-                            // sometimes randomly skip non-victory cards for no reason
-                            // cout << "skipped\n";
+                        // 1/3 chance to skip card in buy order
+                        if(RandInt(1, 3) == 1){
                             continue;
                         }
 
