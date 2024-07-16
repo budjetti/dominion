@@ -29,6 +29,7 @@ Segfault when giving bad input to Militia response
 #include <sstream>
 #include <cctype>
 #include <optional>
+#include <stdexcept>
 
 // Controversial line of code ahead
 using namespace std;
@@ -179,16 +180,20 @@ public:
 
 // ------------------------------------------ STATIC FUNCTIONS ------------------------------------
 
-/*
-Checks game end conditions and returns false if they have been met.
-*/
-static bool GameShouldContinue(vector<vector<Card>> & shop){
+static size_t EmptySupplyPileCount(vector<vector<Card>> & shop){
     size_t emptyStacks = 0;
     for(vector<Card> v : shop){
         if(v.size() == 0)
             emptyStacks++;
     }
+    return emptyStacks;
+}
 
+/*
+Checks game end conditions and returns false if they have been met.
+*/
+static bool GameShouldContinue(vector<vector<Card>> & shop){
+    size_t emptyStacks = EmptySupplyPileCount(shop);
     if(emptyStacks == 0){
         // no stacks have depleted
         return true;
@@ -394,7 +399,7 @@ public:
         size_t total = 0;
         size_t gardens = 0;
         for(Card c : GetDeck()){
-            if(c.data.type != CardType::VICTORY)
+            if(!(c.data.type == CardType::VICTORY || c.data.type == CardType::CURSE))
                 continue;
             switch(c.data.id){
                 case CardId::ESTATE:
@@ -1404,7 +1409,7 @@ protected:
                             if(hand.size() <= 3)
                                 break;
                             string s = IdToCardData(id).name;
-                            cout << "looking for " << s << "\n";
+                            // cout << "looking for " << s << "\n";
                             CardId id = FindCard(s, hand).data.id;
                             if(id != CardId::NO_ID && Discard(id)){
                                 cout << name << " discarded " << s << "\n";
@@ -1602,7 +1607,9 @@ protected:
 
     size_t ProvinceCount(){
         for(vector<Card> v : *shop){
-            if(v.back().data.id == CardId::PROVINCE){
+            if(v.size() == 0){
+                continue;
+            } else if(v.back().data.id == CardId::PROVINCE){
                 return v.size();
             }
         }
@@ -1616,6 +1623,10 @@ protected:
                 return true;
         }
         return false;
+    }
+
+    const bool IsLateGame(){
+        return (ProvinceCount() <= 4 || EmptySupplyPileCount(*shop) >= 2);
     }
 
     bool PlayPhase(bool isBuyPhase) override{
@@ -1633,9 +1644,19 @@ protected:
                 for(int i = 0; i < buys; i++){
                     for(CardId id : buyOrder){
                         CardData data = IdToCardData(id);
-                        if(data.id != CardId::PROVINCE && data.type == CardType::VICTORY && ProvinceCount() > 4){
+                        if(data.id == CardId::PROVINCE){
+                            // always buy province when able
+                            if(BuyCard(data.name, false)){
+                                break;
+                            }
+                        } else if(data.type == CardType::VICTORY && !IsLateGame()){
                             // Only buy non-province victory cards in late game
                             continue;
+                        } else if(data.id == CardId::GOLD && IsLateGame()){
+                            // Prefer Duchy over gold in late game
+                            if(BuyCard("Duchy", false)){
+                                break;
+                            }
                         }
 
                         unsigned seed = chrono::system_clock::now().time_since_epoch().count();
@@ -1704,8 +1725,8 @@ private:
     vector<Player*> players;
     vector<vector<Card>> shop;
     vector<Card> trash;
-    size_t playerCount;
-    size_t botCount;
+    int playerCount;
+    int botCount;
 
     /*
     Creates shop stack. TODO add a dedicated shop stack class?
@@ -1728,11 +1749,39 @@ private:
             players.push_back(player);
         }
     }
+    bool tryParse(string& input, int& output){
+        try{
+            output = stoi(input);
+        } catch (invalid_argument){
+            return false;
+        }
+        return true;
+    }
 
+    void GetCount(string prompt, int& count, int max){
+        string input;
+        cout << prompt << " (0-" << max << "): ";
+        getline(cin, input);
+        while(!tryParse(input, count)){
+            cout << prompt << " (0-" << max << "): ";
+            getline(cin, input);
+        }
+        if(count > max || count < 0){
+            GetCount(prompt, count, max);
+        }
+    }
     void Settings(){
-        // TODO prompt player for settings
-        playerCount = 1;
-        botCount = 3;
+        cout << "A CLI adaptation of Dominion (2008) by budjetti - version 1.0\n";
+        // cout << "https://github.com/budjetti/dominion\n";
+        cout << "\n";
+        string input;
+
+        GetCount("Enter player count", playerCount, 4);
+        int maxBots = 4 - playerCount;
+        GetCount("Enter bot count", botCount, maxBots);
+        cout << "\n";
+        cout << "------------------- START GAME -------------------\n";
+        cout << "\n";
     }
 
     /*
