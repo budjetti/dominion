@@ -14,13 +14,8 @@ Author: budjetti
 */
 
 /*
-GENERAL TODO
-    Turn counter
-    Help command
-    Card descriptions
-    Game settings
-    Bot
-    Split file & Make
+ISSUES / TODO
+Segfault when giving bad input to Militia response
 */
 
 #include <iostream>
@@ -217,9 +212,9 @@ static bool GameShouldContinue(vector<vector<Card>> & shop){
 /*
 For example, CardId::ESTATE -> "Estate"
 */
-static const string CardIdToName(CardId id){
+static const CardData IdToCardData(CardId id){
     Card card(id);
-    return card.data.name;
+    return card.data;
 }
 
 /*
@@ -951,7 +946,7 @@ protected:
                     cout << "\n";
                     lastType = data.type;
                 }
-                cout << shopStack.size() << "x " << data.name << " (" << data.cost << ")\t" << (data.name.length() <= 7 ? "\t" : "") << data.description << "\n";
+                cout << shopStack.size() << "x " << data.name << " (" << data.cost << ")\t" << (data.name.length() <= 7 ? " \t" : "") << data.description << "\n";
             }
         }
         cout << "--------------------------------------\n";
@@ -1240,7 +1235,7 @@ protected:
     bool PlayChancellor(){
         gold += 2;
         cout << "Move " << drawPile.size() << " cards from draw to discard? (y/n): ";
-        if(Confirm()){
+        if(autoResponse || Confirm()){
             MoveAllCards(drawPile, discardPile);
             cout << "Cards moved.\n";
         }
@@ -1285,7 +1280,7 @@ protected:
     vector<Card> AttackResponse(CardId attackId){
         vector<Card> selected;
 
-        cout << name << " is attacked by " << CardIdToName(attackId) << "\n";
+        cout << name << " is attacked by " << IdToCardData(attackId).name << "\n";
         // cout << FindCard("Moat", hand).data.name << "\n";
         if(FindCard("Moat", hand).data.id != CardId::NO_ID){
             if(!autoResponse)
@@ -1408,7 +1403,7 @@ protected:
                         for(int i = 0; i < hand.size() - 3; i++){
                             if(hand.size() <= 3)
                                 break;
-                            string s = CardIdToName(id);
+                            string s = IdToCardData(id).name;
                             cout << "looking for " << s << "\n";
                             CardId id = FindCard(s, hand).data.id;
                             if(id != CardId::NO_ID && Discard(id)){
@@ -1577,10 +1572,10 @@ protected:
         CardId::MARKET,
         CardId::WITCH,
         // 4
+        CardId::GARDENS,
         CardId::MILITIA,
         CardId::BUREAUCRAT,
         CardId::SMITHY,
-        CardId::GARDENS,
         // 3
         CardId::SILVER,
         CardId::CHANCELLOR,
@@ -1605,9 +1600,19 @@ protected:
         */
     };
 
+    size_t ProvinceCount(){
+        for(vector<Card> v : *shop){
+            if(v.back().data.id == CardId::PROVINCE){
+                return v.size();
+            }
+        }
+        cout << "No Provinces in shop\n";
+        return -1;
+    }
+
     bool PlayNextCard(){
         for(CardId id : playOrder){
-            if(PlayCard(CardIdToName(id), CardType::ACTION, false))
+            if(PlayCard(IdToCardData(id).name, CardType::ACTION, false))
                 return true;
         }
         return false;
@@ -1627,7 +1632,23 @@ protected:
                 // cout << gold << "\n";
                 for(int i = 0; i < buys; i++){
                     for(CardId id : buyOrder){
-                        if(BuyCard(CardIdToName(id), false)){
+                        CardData data = IdToCardData(id);
+                        if(data.id != CardId::PROVINCE && data.type == CardType::VICTORY && ProvinceCount() > 4){
+                            // Only buy non-province victory cards in late game
+                            continue;
+                        }
+
+                        unsigned seed = chrono::system_clock::now().time_since_epoch().count();
+                        mt19937 generator(seed);
+                        uniform_int_distribution<int> distribution(1,3);
+                        int r = distribution(generator);
+                        if(r == 1){
+                            // sometimes randomly skip non-victory cards for no reason
+                            // cout << "skipped\n";
+                            continue;
+                        }
+
+                        if(BuyCard(data.name, false)){
                             break;
                         }
                     }
