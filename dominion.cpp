@@ -333,7 +333,7 @@ static const bool Confirm(){
 }
 
 // !
-static const bool debug = false;
+static const bool debug = true;
 
 /*
 Responsible for most actions in the game, like taking turns and playing cards.
@@ -458,7 +458,7 @@ protected:
     void GainStartingCards(){
         // TODO make sure these cards are not taken from shop, or at least account for it
         if(debug){
-            CreateAndGainCard(CardId::CHAPEL, 10);
+            CreateAndGainCard(CardId::MINE, 2);
         } else {
             CreateAndGainCard(CardId::COPPER, 7);
             CreateAndGainCard(CardId::ESTATE, 3);
@@ -521,7 +521,7 @@ protected:
                 buys--;
                 gold -= shopStack.back().data.cost;
                 GainCard(cardName);
-                cout << "Bought " << cardName << "\n";
+                cout << "Bought " << cardName << ".\n";
                 return true;
             }
         }
@@ -531,7 +531,7 @@ protected:
             return BuyCard(retry, *verbose);
         }
         if(*verbose)
-            cout << "No card with unambiguously matcing name found in shop\n";
+            cout << "No card with unambiguously matcing name found in shop.\n";
         return false;
     }
 
@@ -654,11 +654,9 @@ protected:
     Draws specified amount of cards, shuffling discard into draw as appropriate.
     */
     bool Draw(int count){
-        // cout << "drawing " << count << " cards by " << name << "\n";
         for(size_t i = 0; i < count; i++){
             if(drawPile.size() > 0){
                 // drawPile.back() is the topmost card
-                // cout << name << " draws " << drawPile.back().data.name << "\n";
                 Card card = drawPile.back();
                 hand.push_back(card);
                 drawPile.pop_back();
@@ -667,7 +665,7 @@ protected:
                     ShuffleDiscardIntoDraw();
                     Draw(1);
                 } else {
-                    // cout << "both draw and discard are empty, no cards to draw\n";
+                    // both draw and discard are empty, no cards to draw
                     return false;
                 }
             }
@@ -848,8 +846,6 @@ protected:
                     if(autoClaim)
                         ClaimAll();
                     BuyCard(tokens[1]);
-                    // check for game end
-
                     if(isBuyPhase){
                         continue;
                     } else{
@@ -858,7 +854,7 @@ protected:
                     }
                 }
             }
-            cout << "Invalid input\n";
+            cout << "Invalid input.\n";
         }
         return true;
     }
@@ -1133,6 +1129,11 @@ protected:
         return true;
     }
     bool PlayMine(){
+        if(hand.size() == 0 || FindCardsOfType(CardType::TREASURE, hand).size() == 0){
+            cout << "No treasure cards in hand.\n";
+            // returning false here causes softlock
+            return true;
+        }
         vector<string> tokens = ResponseToTokens("Trash treasure from hand (eg. copper / co): ");
         if(tokens.size() == 0){
             return false;
@@ -1534,11 +1535,11 @@ protected:
         CardId::MARKET,
         CardId::FESTIVAL,
         // terminal
-        CardId::MILITIA,
-        CardId::BUREAUCRAT,
         CardId::WITCH,
         CardId::COUNCIL_ROOM,
         CardId::SMITHY,
+        CardId::BUREAUCRAT,
+        CardId::MILITIA,
         CardId::CHANCELLOR,
         CardId::WOODCUTTER,
         CardId::MOAT,
@@ -1573,9 +1574,9 @@ protected:
         CardId::WITCH,
         // 4
         CardId::GARDENS,
+        CardId::SMITHY,
         CardId::MILITIA,
         CardId::BUREAUCRAT,
-        CardId::SMITHY,
         // 3
         CardId::SILVER,
         CardId::CHANCELLOR,
