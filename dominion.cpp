@@ -333,7 +333,7 @@ static const bool Confirm(){
 }
 
 // !
-static const bool debug = true;
+static const bool debug = false;
 
 /*
 Responsible for most actions in the game, like taking turns and playing cards.
@@ -1282,7 +1282,6 @@ protected:
         vector<Card> selected;
 
         cout << name << " is attacked by " << IdToCardData(attackId).name << "\n";
-        // cout << FindCard("Moat", hand).data.name << "\n";
         if(FindCard("Moat", hand).data.id != CardId::NO_ID){
             if(!autoResponse)
                 cout << "Cancel attack with Moat? (y/n): ";
@@ -1444,7 +1443,6 @@ protected:
     */
     bool Attack(CardId attackId){
         for(Player * p : *allPlayers){
-            // cout << "looking at " << p->name << "\n";
             // Spy also targets self
             if(p->name != name || attackId == CardId::SPY){
                 vector<Card> selected = p->AttackResponse(attackId);
@@ -1610,7 +1608,7 @@ protected:
             }
         }
         cout << "No Provinces in shop\n";
-        return -1;
+        return 0; 
     }
 
     bool PlayNextCard(){
@@ -1643,7 +1641,6 @@ protected:
                 // move to buy phase
                 return true;
             } else {
-                // cout << gold << "\n";
                 for(int i = 0; i < buys; i++){
                     for(CardId id : buyOrder){
                         CardData data = IdToCardData(id);
@@ -1784,8 +1781,6 @@ private:
         GetCount("Enter player count", playerCount, 4);
         int maxBots = 4 - playerCount;
         GetCount("Enter bot count", botCount, maxBots);
-        // cout << "\n";
-        // cout << "---------- START GAME ----------\n";
     }
 
     /*
@@ -1870,7 +1865,6 @@ private:
         for(auto * p : players){
             cout << "\n---------- " << p->GetName() <<  "'s Turn ---------\n\n";
             p->TakeTurn();
-            // cout << "\n---------- Turn ended ----------\n\n";
             if(!GameShouldContinue(shop)){
                 return false;
             }
@@ -1882,7 +1876,6 @@ private:
     Print results.
     */
     void EndGame(){
-        // cout << "\nGame finished \n";
         cout << "\n---------- GAME FINISHED --------\n\n";
         for(Player * p : players){
             p->PrintScore();
