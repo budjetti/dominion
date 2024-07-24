@@ -521,7 +521,7 @@ protected:
                 buys--;
                 gold -= shopStack.back().data.cost;
                 GainCard(cardName);
-                cout << "Bought " << cardName << ".\n";
+                cout << "Bought " << cardName << "\n";
                 return true;
             }
         }
@@ -931,6 +931,7 @@ protected:
     }
     void PrintShop(){
         CardType lastType = CardType::TREASURE;
+        cout << "\n";
         cout << "---------------- SHOP ----------------\n";
         cout << "CT  NAME   COST         DESCRIPTION\n";
         for(auto shopStack : *shop){
@@ -946,22 +947,25 @@ protected:
             }
         }
         cout << "--------------------------------------\n";
+        cout << "\n";
     }
     void PrintHelp(){
         cout << "\n";
+        cout << "A CLI adaptation of Dominion (2008) by budjetti - version 1.0\n";
+        cout << "\n";
         cout << "https://github.com/budjetti/dominion\n";
-        cout << "Type 'help' or 'h' to see the list of commands.\n";
+        cout << "Type 'help' or 'h' to see this list of commands.\n";
         // cout << "Type 'help name' or 'h name' to find more about name\n";
-        cout << "[lowercase] arguments are optional. [UPPERCASE] are mandatory.\n";
+        cout << "When selecting a card for the buy/play commands or any other effects such as attack responses, the first card that unambiguously matches your provided input is selected. For example, if your hand is Cellar, Chapel and Laboratory, you only need to type 'play l' to play Laboratory or 'play ce' to play Cellar.\n";
         cout << "\n";
         cout << "COMMAND\t\t\t\tEXAMPLE USAGE\n";
         cout << "(a)uto(c)laim [off/on]\t\tautoclaim on / ac off / ac\n";
-        cout << "(b)uy [NAME]\t\t\tbuy copper / b cop\n";
+        cout << "(b)uy [NAME]\t\t\tbuy copper / b co\n";
         cout << "(c)laim\t\t\t\tclaim / c\n";
         cout << "(d)eck\t\t\t\tdeck / d\n";
         cout << "(e)nd\t\t\t\tend / e\n";
-        cout << "(h)elp [command]\t\thelp / h / h buy\n";
-        cout << "(p)lay [NAME]\t\t\tplay smithy / p smi\n";
+        cout << "(h)elp\t\t\t\thelp / h\n";
+        cout << "(p)lay [NAME]\t\t\tplay smithy / p smi / p s\n";
         cout << "(r)ules\t\t\t\trules / r\n";
         cout << "(s)hop\t\t\t\tshop / s\n";
         cout << "\n";
@@ -1607,8 +1611,8 @@ protected:
                 return v.size();
             }
         }
-        cout << "No Provinces in shop\n";
-        return 0; 
+        // cout << "No Provinces in shop\n";
+        return 0;
     }
 
     bool PlayNextCard(){
