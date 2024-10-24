@@ -9,5 +9,8 @@ cd dominion
 g++ dominion.cpp -o dominion  
 ./dominion
 
-# Why did I make this?
-I was really into both Dominion and c++ at the time. 🤓
+# FAQ
+### Why was this made?
+I was really into both Dominion and c++ at the time.
+### Why is it all in one file?
+Because I was lazy and didn't want to write header files.
