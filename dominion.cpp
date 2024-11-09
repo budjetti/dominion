@@ -336,7 +336,13 @@ static const bool Confirm(optional<string> defaultResponse = nullopt){
         else
             return Confirm();
     }
-    return (response[0] == "y" || response[0] == "Y");
+
+    if (response[0] == "y" || response[0] == "Y")
+        return true;
+    else if (response[0] == "n" || response[0] == "N")
+        return false;
+    else
+        return Confirm();
 }
 
 // !
