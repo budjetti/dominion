@@ -328,8 +328,15 @@ static const void MoveAllCards(vector<Card> & original, vector<Card> & destinati
 /*
 Use after prompting user to answer (y/n)
 */
-static const bool Confirm(){
-    return (ResponseToTokens("")[0] == "y");
+static const bool Confirm(optional<string> defaultResponse = nullopt){
+    vector<string> response = ResponseToTokens("");
+    if(response.size() == 0){
+        if(defaultResponse)
+            return (defaultResponse == "y" || defaultResponse == "Y");
+        else
+            return Confirm();
+    }
+    return (response[0] == "y" || response[0] == "Y");
 }
 
 // !
@@ -1288,8 +1295,8 @@ protected:
         cout << name << " is attacked by " << IdToCardData(attackId).name << "\n";
         if(FindCard("Moat", hand).data.id != CardId::NO_ID){
             if(!autoResponse)
-                cout << "Cancel attack with Moat? (y/n): ";
-            if(autoResponse || Confirm())
+                cout << "Cancel attack with Moat? (Y/n): ";
+            if(autoResponse || Confirm("y"))
                 return selected;
         }
 
