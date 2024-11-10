@@ -9,9 +9,9 @@ In a Linux shell or [WSL](https://learn.microsoft.com/en-us/windows/wsl/install)
 
 `cd dominion`
 
-`g++ dominion.cpp -o game`
+`g++ dominion.cpp -o dominion`
 
-`./game`
+`./dominion`
 
 # FAQ
 ### Why did I make this?
