@@ -777,18 +777,18 @@ protected:
         } else if(tokens[0] == "shop" || tokens[0] == "s"){
             PrintShop();
             return true;
-        } else if(tokens[0] == "status" || tokens[0] == "st"){
-            PrintStatus(true);
-            return true;
-        } else if(tokens[0] == "discard" || tokens[0] == "di"){
-            PrintDiscard();
-            return true;
-        } else if(tokens[0] == "hand" || tokens[0] == "ha"){
-            PrintHand();
-            return true;
-        } else if(tokens[0] == "played" || tokens[0] == "pd"){
-            PrintPlayArea();
-            return true;
+        // } else if(tokens[0] == "status" || tokens[0] == "st"){
+        //     PrintStatus(true);
+        //     return true;
+        // } else if(tokens[0] == "discard" || tokens[0] == "di"){
+        //     PrintDiscard();
+        //     return true;
+        // } else if(tokens[0] == "hand" || tokens[0] == "ha"){
+        //     PrintHand();
+        //     return true;
+        // } else if(tokens[0] == "played" || tokens[0] == "pd"){
+        //     PrintPlayArea();
+        //     return true;
         } else if(tokens[0] == "deck" || tokens[0] == "d"){
             PrintAll();
             return true;
@@ -964,9 +964,9 @@ protected:
     }
     void PrintHelp(){
         cout << "\n";
-        cout << "A CLI adaptation of Dominion (2008) by budjetti - version 1.0\n";
-        cout << "\n";
+        cout << "A CLI adaptation of Dominion (2008) by budjetti - version 1.0.2\n";
         cout << "https://github.com/budjetti/dominion\n";
+        cout << "\n";
         cout << "Type 'help' or 'h' to see this list of commands.\n";
         // cout << "Type 'help name' or 'h name' to find more about name\n";
         cout << "When selecting a card for the buy/play commands or any other effects such as attack responses, the first card that unambiguously matches your provided input is selected. For example, if your hand is Cellar, Chapel and Laboratory, you only need to type 'play l' to play Laboratory or 'play ce' to play Cellar.\n";
