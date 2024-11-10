@@ -29,7 +29,7 @@ Author: budjetti
 // Controversial line of code ahead
 using namespace std;
 
-static const string VERSION_NUMBER = "1.0.3";
+static const string VERSION_NUMBER = "1.0.4";
 
 /*
 List of all card ID's. Used alongside CardData.name to identify cards. Player uses CardId's to determine which
@@ -1048,6 +1048,9 @@ protected:
     bool PlayCellar(){
         actions++;
         vector<string> tokens = ResponseToTokens("Discard (eg. estate estate copper / e e co / all): ");
+        if(tokens.size() == 0){
+            return true;
+        }
         size_t discardedCount = 0;
         if(tokens[0] == "all"){
             // doing a for loop here seems to not discard the last card...
@@ -1072,7 +1075,7 @@ protected:
     bool PlayChapel(){
         vector<string> tokens = ResponseToTokens("Trash (eg. estate estate copper / e e co / all): ");
         if(tokens.size() == 0){
-            return false;
+            return true;
         }
         if(tokens[0] == "all"){
             // doing a for loop here seems to not trash the last card...
@@ -1150,7 +1153,6 @@ protected:
     bool PlayMine(){
         if(hand.size() == 0 || FindCardsOfType(CardType::TREASURE, hand).size() == 0){
             cout << "No treasure cards in hand.\n";
-            // returning false here causes softlock
             return true;
         }
         vector<string> tokens = ResponseToTokens("Trash treasure from hand (eg. copper / co): ");
@@ -1199,6 +1201,10 @@ protected:
         return true;
     }
     bool PlayThroneRoom(){
+        if(hand.size() == 0){
+            cout << "No cards to target\n";
+            return true;
+        }
         vector<string> tokens = ResponseToTokens("Choose card from hand to play twice (eg. witch / throne): ");
         if(tokens.size() == 0){
             return false;
@@ -1223,11 +1229,10 @@ protected:
     bool PlayRemodel(){
         if(hand.size() == 0){
             cout << "No card to trash.\n";
-            return false;
+            return true;
         }
         vector<string> tokens = ResponseToTokens("Trash card from hand (eg. silver / si): ");
         if(tokens.size() == 0){
-            PlayRemodel();
             return false;
         }
         Card cardToTrash = FindCard(tokens[0], hand);
@@ -1238,11 +1243,14 @@ protected:
         size_t newCardCost = cardToTrash.data.cost + 2;
         cout << "Gain card with cost " << newCardCost << " or less (eg. copper): ";
         vector<string> tokens2 = ResponseToTokens("");
-        if(tokens.size() == 0){
+        if(tokens2.size() == 0){
             return false;
         }
         Card cardToGain = FindCard(tokens2[0], *shop);
-        if(cardToGain.data.cost <= newCardCost){
+        if(cardToGain.data.id == CardId::NO_ID){
+            cout << "No card with unambiguously matcing name found in shop.\n";
+            return false;
+        } else if(cardToGain.data.cost <= newCardCost){
             GainCard(cardToGain.data.name);
             cout << "Gained " << cardToGain.data.name << " \n";
         } else {
