@@ -1,7 +1,5 @@
 A command-line adaptation of base game Dominion (2008). Features bots with rudimentary strategy who love to attack.
 
-Version 1.0.2
-
 # Build from source
 In a Linux shell or [WSL](https://learn.microsoft.com/en-us/windows/wsl/install) on Windows, run the following commands.
 
