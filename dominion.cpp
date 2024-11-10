@@ -29,6 +29,8 @@ Author: budjetti
 // Controversial line of code ahead
 using namespace std;
 
+static const string VERSION_NUMBER = "1.0.3";
+
 /*
 List of all card ID's. Used alongside CardData.name to identify cards. Player uses CardId's to determine which
 card effect to resolve when playing a card.
@@ -964,7 +966,7 @@ protected:
     }
     void PrintHelp(){
         cout << "\n";
-        cout << "A CLI adaptation of Dominion (2008) by budjetti - version 1.0.2\n";
+        cout << "A CLI adaptation of Dominion (2008) by budjetti - version " + VERSION_NUMBER + "\n";
         cout << "https://github.com/budjetti/dominion\n";
         cout << "\n";
         cout << "Type 'help' or 'h' to see this list of commands.\n";
@@ -1790,7 +1792,7 @@ private:
         }
     }
     void Settings(){
-        cout << "A CLI adaptation of Dominion (2008) by budjetti - version 1.0\n";
+        cout << "A CLI adaptation of Dominion (2008) by budjetti - version " + VERSION_NUMBER + "\n";
         // cout << "https://github.com/budjetti/dominion\n";
         cout << "\n";
         string input;
