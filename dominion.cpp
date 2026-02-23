@@ -29,7 +29,7 @@ Author: budjetti
 // Controversial line of code ahead
 using namespace std;
 
-static const string VERSION_NUMBER = "1.0.5";
+static const string VERSION_NUMBER = "1.0.6";
 
 /*
 List of all card ID's. Used alongside CardData.name to identify cards. Player uses CardId's to determine which
@@ -1485,13 +1485,17 @@ protected:
                     PrintCardVector(selected);
                     for(Card c : selected){
                         if(c.data.type == CardType::TREASURE){
-                            cout << "Steal " << c.data.name << "? (y/n): ";
-                            if(Confirm()){
-                                p->Trash(c.data.id, true);
-                                GainCard(c.data.name);
-                                cout << "Stole " << c.data.name << " from " << p->name << "\n";
-                                break;
+                            if(!autoResponse){
+                                cout << "Steal " << c.data.name << "? (y/n): ";
+                                if(!Confirm())
+                                    continue;
+                            } else if(c.data.cost < 3){
+                                continue;
                             }
+                            p->Trash(c.data.id, true);
+                            GainCard(c.data.name);
+                            cout << "Stole " << c.data.name << " from " << p->name << "\n";
+                            break;
                         }
                     }
                 } else if(attackId == CardId::SPY){
@@ -1567,6 +1571,7 @@ protected:
         // terminal
         CardId::WITCH,
         CardId::COUNCIL_ROOM,
+        CardId::THIEF,
         CardId::SMITHY,
         CardId::BUREAUCRAT,
         CardId::MILITIA,
@@ -1582,7 +1587,6 @@ protected:
         CardId::CHAPEL,
         CardId::FEAST,
         CardId::SPY,
-        CardId::THIEF,
         CardId::REMODEL,
         CardId::MINE,
         CardId::LIBRARY,
@@ -1604,6 +1608,7 @@ protected:
         CardId::WITCH,
         // 4
         CardId::GARDENS,
+        CardId::THIEF,
         CardId::SMITHY,
         CardId::MILITIA,
         CardId::BUREAUCRAT,
@@ -1622,7 +1627,6 @@ protected:
         CardId::CHAPEL,
         CardId::FEAST,
         CardId::SPY,
-        CardId::THIEF,
         CardId::REMODEL,
         CardId::MINE,
         CardId::LIBRARY,
