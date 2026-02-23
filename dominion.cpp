@@ -29,7 +29,7 @@ Author: budjetti
 // Controversial line of code ahead
 using namespace std;
 
-static const string VERSION_NUMBER = "1.0.4";
+static const string VERSION_NUMBER = "1.0.5";
 
 /*
 List of all card ID's. Used alongside CardData.name to identify cards. Player uses CardId's to determine which
@@ -1164,8 +1164,13 @@ protected:
             cout << "Not a treasure card.\n";
             return false;
         }
+        Trash(treasureToTrash.data.id);
         size_t newCost = treasureToTrash.data.cost + 3;
-        cout << "Gain treasure with cost " << newCost << " or less (eg. silver / si): ";
+        string hint = "silver / si";
+        if(newCost >= 6){
+            hint = "gold / go";
+        }
+        cout << "Gain treasure with cost " << newCost << " or less (eg. " << hint << "): ";
         vector<string> tokens2 = ResponseToTokens("");
         if(tokens2.size() == 0){
             return false;
