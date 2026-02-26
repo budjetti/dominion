@@ -29,7 +29,7 @@ Author: budjetti
 // Controversial line of code ahead
 using namespace std;
 
-static const string VERSION_NUMBER = "1.0.6";
+static const string VERSION_NUMBER = "1.0.7";
 
 /*
 List of all card ID's. Used alongside CardData.name to identify cards. Player uses CardId's to determine which
@@ -405,8 +405,8 @@ public:
     /*
     Tallies victory points.
     */
-    size_t Score(){
-        size_t total = 0;
+    int16_t Score(){
+        int16_t total = 0;
         size_t gardens = 0;
         for(Card c : GetDeck()){
             if(!(c.data.type == CardType::VICTORY || c.data.type == CardType::CURSE))
