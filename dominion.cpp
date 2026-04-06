@@ -29,7 +29,7 @@ Author: budjetti
 // Controversial line of code ahead
 using namespace std;
 
-static const string VERSION_NUMBER = "1.0.7";
+static const string VERSION_NUMBER = "1.0.8";
 
 /*
 List of all card ID's. Used alongside CardData.name to identify cards. Player uses CardId's to determine which
@@ -1356,6 +1356,9 @@ protected:
                     return selected;
                 }
                 response = ResponseToTokens("Choose card to put on top (eg. estate / es): ");
+                if(response.size() == 0){
+                    continue;
+                }
                 Card card = FindCard(response[0], hand);
                 if(card.data.type == CardType::VICTORY){
                     MoveCard(hand, drawPile, card.data.id);
